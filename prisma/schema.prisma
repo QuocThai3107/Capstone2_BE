@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Ví dụ về một model
+model User {
+  id                Int          @id @default(autoincrement()) @map("user_id")
+  username          String?      @db.VarChar(64)
+  password          String?      @db.VarChar(64)
+  email             String?      @db.VarChar(255)
+  phoneNum          String?      @db.VarChar(10)
+  roleId            Int?         @map("role_id")
+  statusId          Int?         @map("Status_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at")
+  name              String?      @db.VarChar(50)
+  imgUrl            String?      @db.Text @map("imgUrl")
+  introduction      String?      @db.Text
+  healthInformation String?      @db.Text @map("Health_information")
+  illness           String?      @db.Text
+  
+  // Relations
+  sentChats         Chat[]       @relation("SentChats")
+  receivedChats     Chat[]       @relation("ReceivedChats")
+  plans             Plan[]
+  schedules         Schedule[]
+  payments          Payment[]    @relation("UserPayments")
+  receivedPayments  Payment[]    @relation("ToUserPayments")
+  recommends        Recommend[]
+}
+
+model Tag {
+  id               Int              @id @default(autoincrement()) @map("tag_id")
+  tagName          String?          @db.VarChar(50) @map("tag_name")
+  
+  // Relations
+  exercisePosts    ExercisepostTag[]
+  recommends       Recommend[]
+}
+
+model Recommend {
+  userId    Int     @map("user_id")
+  tagId     Int     @map("tag_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tagId])
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement()) @map("chat_id")
+  userId    Int      @map("user_id")
+  toUserId  Int      @map("to_user_id")
+  content   String?  @db.Text
+  imgUrl    String?  @db.Text @map("img_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user      User     @relation("SentChats", fields: [userId], references: [id], onDelete: Cascade)
+  toUser    User     @relation("ReceivedChats", fields: [toUserId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id            Int        @id @default(autoincrement()) @map("plan_id")
+  userId        Int        @map("user_id")
+  planName      String?    @db.VarChar(50) @map("plan_name")
+  description   String?    @db.Text @map("Description")
+  totalDuration Int?       @map("total_duration")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planSlots     PlanSlot[]
+  schedules     Schedule[]
+}
+
+model PlanSlot {
+  planId    Int       @map("plan_id")
+  no        String    @db.VarChar(2)
+  note      String?   @db.VarChar(50)
+  id        Int       @map("_id")
+  duration  Int?
+  
+  // Relations
+  plan      Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@id([planId, no])
+}
+
+model Schedule {
+  id        Int       @id @default(autoincrement()) @map("schedule_id")
+  userId    Int       @map("user_id")
+  note      String?   @db.VarChar(50)
+  planId    Int       @map("plan_id")
+  day       String?   @db.VarChar(20)
+  startHour DateTime? @db.Time @map("start_hour")
+  endHour   DateTime? @db.Time @map("end_hour")
+  
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model ExercisePost {
+  id          Int               @id @default(autoincrement()) @map("exercisepost_id")
+  name        String?          @db.VarChar(50)
+  description String?          @db.Text
+  imgUrl      String?          @db.Text @map("img_url")
+  
+  // Relations
+  tags        ExercisepostTag[]
+  steps       Step[]
+}
+
+model ExercisepostTag {
+  exercisePostId Int          @map("exercisepost_id")
+  tagId         Int          @map("tag_id")
+  
+  // Relations
+  exercisePost  ExercisePost @relation(fields: [exercisePostId], references: [id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([exercisePostId, tagId])
+}
+
+model Step {
+  exercisePostId Int       @map("exercisepost_id")
+  stepNumber     String    @db.VarChar(2) @map("step_number")
+  instruction    String?   @db.Text
+  imgUrl        String?   @db.Text @map("img_url")
+  
+  // Relations
+  exercisePost   ExercisePost @relation(fields: [exercisePostId], references: [id], onDelete: Cascade)
+
+  @@id([exercisePostId, stepNumber])
+}
+
+model Payment {
+  id            Int       @id @default(autoincrement()) @map("payment_id")
+  paymentType   Int?      @map("payment_type")
+  userId        Int       @map("user_id")
+  toUserId      Int       @map("touser_id")
+  amountPaid    Decimal?  @db.Decimal(10, 2) @map("amount_paid")
+  paymentDate   DateTime  @default(now()) @map("payment_date")
+  statusId      Int?      @map("status_id")
+  paymentMethod String?   @db.VarChar(20) @map("payment_method")
+  orderId       String?   @db.VarChar(255) @map("order_id")
+  
+  // Relations
+  user          User      @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  toUser        User      @relation("ToUserPayments", fields: [toUserId], references: [id], onDelete: Cascade)
+} 
