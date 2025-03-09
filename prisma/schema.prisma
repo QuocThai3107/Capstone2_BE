@@ -82,16 +82,14 @@ model Plan {
 }
 
 model PlanSlot {
+  id        Int       @id @default(autoincrement()) @map("plan_slot_id")
   planId    Int       @map("plan_id")
   no        String    @db.VarChar(2)
   note      String?   @db.VarChar(50)
-  id        Int       @map("_id")
   duration  Int?
-  
-  // Relations
   plan      Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
 
-  @@id([planId, no])
+  @@map("plan_slots")
 }
 
 model Schedule {
