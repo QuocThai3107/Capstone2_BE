@@ -13,4 +13,8 @@ export class CreatePlanSlotDto {
 
   @IsNumber()
   duration: number;
+
+  @IsNumber()
+  @IsOptional()
+  exercisePostId?: number;
 } 

@@ -8,6 +8,7 @@ import { PlanSlotsModule } from './plan-slots/plan-slots.module';
 import { ExercisePostModule } from './exercise-post/exercise-post.module';
 import { ExercisePostTagModule } from './exercise-post-tag/exercise-post-tag.module';
 import { StepModule } from './step/step.module';
+import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
   imports: [
@@ -17,7 +18,10 @@ import { StepModule } from './step/step.module';
     PlanSlotsModule,
     ExercisePostModule,
     ExercisePostTagModule,
-    StepModule
+    StepModule,
+    MulterModule.register({
+      dest: './uploads',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

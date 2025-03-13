@@ -82,14 +82,16 @@ model Plan {
 }
 
 model PlanSlot {
-  id        Int       @id @default(autoincrement()) @map("plan_slot_id")
-  planId    Int       @map("plan_id")
-  no        String    @db.VarChar(2)
-  note      String?   @db.VarChar(50)
-  duration  Int?
-  plan      Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id              Int           @id @default(autoincrement()) @map("_id")
+  planId          Int           @map("plan_id")
+  no              String        @db.VarChar(2)
+  note            String?       @db.VarChar(50)
+  duration        Int?
+  exercisePostId  Int?         @map("exercise_post_id")
+  plan            Plan          @relation(fields: [planId], references: [id], onDelete: Cascade)
+  exercisePost    ExercisePost? @relation(fields: [exercisePostId], references: [id])
 
-  @@map("plan_slots")
+  @@map("planslot")
 }
 
 model Schedule {
@@ -115,6 +117,7 @@ model ExercisePost {
   // Relations
   tags        ExercisepostTag[]
   steps       Step[]
+  planSlots   PlanSlot[]
 }
 
 model ExercisepostTag {

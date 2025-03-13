@@ -1,11 +1,29 @@
 import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { ExercisePostTagService } from './exercise-post-tag.service';
 import { CreateExercisePostTagDto } from './dto';
+import { CreateTagDto } from './dto/create-tag.dto';
 
 @Controller('exercise-post-tags')
 export class ExercisePostTagController {
   constructor(private readonly exercisePostTagService: ExercisePostTagService) {}
 
+  // Tag management endpoints
+  @Post('tag')
+  createTag(@Body() createTagDto: CreateTagDto) {
+    return this.exercisePostTagService.createTag(createTagDto);
+  }
+
+  @Get('tags')
+  findAllTags() {
+    return this.exercisePostTagService.findAllTags();
+  }
+
+  @Delete('tag/:id')
+  removeTag(@Param('id') id: string) {
+    return this.exercisePostTagService.removeTag(+id);
+  }
+
+  // Exercise Post Tag endpoints
   @Post()
   create(@Body() createExercisePostTagDto: CreateExercisePostTagDto) {
     return this.exercisePostTagService.create(createExercisePostTagDto);

@@ -1,11 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExercisePostTagDto, UpdateExercisePostTagDto } from './dto';
+import { CreateTagDto } from './dto/create-tag.dto';
 
 @Injectable()
 export class ExercisePostTagService {
   constructor(private prisma: PrismaService) {}
 
+  // Tag management methods
+  async createTag(dto: CreateTagDto) {
+    return this.prisma.tag.create({
+      data: dto
+    });
+  }
+
+  async findAllTags() {
+    return this.prisma.tag.findMany();
+  }
+
+  async removeTag(id: number) {
+    const tag = await this.prisma.tag.findUnique({
+      where: { id }
+    });
+
+    if (!tag) {
+      throw new NotFoundException(`Tag with ID ${id} not found`);
+    }
+
+    return this.prisma.tag.delete({
+      where: { id }
+    });
+  }
+
+  // Exercise Post Tag methods
   async create(dto: CreateExercisePostTagDto) {
     // Kiểm tra exercisePost có tồn tại không
     const exercisePost = await this.prisma.exercisePost.findUnique({
