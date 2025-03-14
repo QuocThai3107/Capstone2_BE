@@ -1,29 +1,65 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ExercisePostService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
-  async create(dto: CreateExercisePostDto) {
-    const { steps, tagIds, ...exercisePostData } = dto;
+  async create(dto: CreateExercisePostDto, file?: Express.Multer.File) {
+    const { steps: stepsRaw, tagIds: tagIdsRaw, ...exercisePostData } = dto;
 
-    return this.prisma.exercisePost.create({
+    // Parse steps từ string JSON nếu có
+    let steps;
+    if (typeof stepsRaw === 'string' && stepsRaw.trim()) {
+      try {
+        steps = JSON.parse(stepsRaw);
+      } catch (error) {
+        steps = undefined;
+      }
+    } else {
+      steps = stepsRaw;
+    }
+
+    // Parse tagIds từ string JSON nếu có
+    let tagIds;
+    if (typeof tagIdsRaw === 'string' && tagIdsRaw.trim()) {
+      try {
+        tagIds = JSON.parse(tagIdsRaw);
+      } catch (error) {
+        tagIds = undefined;
+      }
+    } else {
+      tagIds = tagIdsRaw;
+    }
+
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
+      exercisePostData.imgUrl = uploadResult.url;
+    }
+
+    // Tạo exercise post và các steps liên quan
+    const result = await this.prisma.exercisePost.create({
       data: {
         ...exercisePostData,
-        steps: {
-          create: steps?.map(step => ({
-            ...step
+        steps: steps ? {
+          create: steps.map(step => ({
+            stepNumber: step.stepNumber,
+            instruction: step.instruction,
+            imgUrl: step.imgUrl
           }))
-        },
-        tags: {
-          create: tagIds?.map(tagId => ({
+        } : undefined,
+        tags: tagIds ? {
+          create: tagIds.map(tagId => ({
             tag: {
               connect: { id: tagId }
             }
           }))
-        }
+        } : undefined
       },
       include: {
         steps: true,
@@ -34,6 +70,8 @@ export class ExercisePostService {
         }
       }
     });
+
+    return result;
   }
 
   async findAll() {
@@ -63,8 +101,48 @@ export class ExercisePostService {
     });
   }
 
-  async update(id: number, dto: UpdateExercisePostDto) {
-    const { steps, tagIds, ...exercisePostData } = dto;
+  async update(id: number, dto: UpdateExercisePostDto, file?: Express.Multer.File) {
+    const { steps: stepsRaw, tagIds: tagIdsRaw, ...exercisePostData } = dto;
+
+    // Parse steps từ string JSON nếu có
+    let steps;
+    if (typeof stepsRaw === 'string' && stepsRaw.trim()) {
+      try {
+        steps = JSON.parse(stepsRaw);
+      } catch (error) {
+        steps = undefined;
+      }
+    } else {
+      steps = stepsRaw;
+    }
+
+    // Parse tagIds từ string JSON nếu có
+    let tagIds;
+    if (typeof tagIdsRaw === 'string' && tagIdsRaw.trim()) {
+      try {
+        tagIds = JSON.parse(tagIdsRaw);
+      } catch (error) {
+        tagIds = undefined;
+      }
+    } else {
+      tagIds = tagIdsRaw;
+    }
+
+    if (file) {
+      const existingPost = await this.prisma.exercisePost.findUnique({
+        where: { id }
+      });
+
+      if (existingPost?.imgUrl) {
+        const publicId = existingPost.imgUrl.split('/').pop()?.split('.')[0];
+        if (publicId) {
+          await this.cloudinaryService.deleteImage(publicId);
+        }
+      }
+
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
+      exercisePostData.imgUrl = uploadResult.url;
+    }
 
     // Xóa các steps cũ nếu có steps mới
     if (steps) {
@@ -86,7 +164,9 @@ export class ExercisePostService {
         ...exercisePostData,
         steps: steps ? {
           create: steps.map(step => ({
-            ...step
+            stepNumber: step.stepNumber,
+            instruction: step.instruction,
+            imgUrl: step.imgUrl
           }))
         } : undefined,
         tags: tagIds ? {

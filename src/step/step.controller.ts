@@ -1,18 +1,30 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { StepService } from './step.service';
 import { CreateStepDto, UpdateStepDto } from './dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('steps')
 export class StepController {
   constructor(private readonly stepService: StepService) {}
 
   @Post()
-  create(@Body() createStepDto: CreateStepDto) {
-    return this.stepService.create(createStepDto);
+  @UseInterceptors(FileInterceptor('image'))
+  create(
+    @Body() createStepDto: CreateStepDto,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    if (createStepDto.exercisePostId) {
+      createStepDto.exercisePostId = +createStepDto.exercisePostId;
+    }
+    return this.stepService.create(createStepDto, file);
   }
 
   @Post('bulk')
   createMany(@Body() createStepDtos: CreateStepDto[]) {
+    createStepDtos = createStepDtos.map(dto => ({
+      ...dto,
+      exercisePostId: +dto.exercisePostId
+    }));
     return this.stepService.createMany(createStepDtos);
   }
 
@@ -35,12 +47,14 @@ export class StepController {
   }
 
   @Patch(':exercisePostId/:stepNumber')
+  @UseInterceptors(FileInterceptor('image'))
   update(
     @Param('exercisePostId') exercisePostId: string,
     @Param('stepNumber') stepNumber: string,
-    @Body() updateStepDto: UpdateStepDto
+    @Body() updateStepDto: UpdateStepDto,
+    @UploadedFile() file?: Express.Multer.File
   ) {
-    return this.stepService.update(+exercisePostId, stepNumber, updateStepDto);
+    return this.stepService.update(+exercisePostId, stepNumber, updateStepDto, file);
   }
 
   @Delete(':exercisePostId/:stepNumber')

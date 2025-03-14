@@ -1,12 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStepDto, UpdateStepDto } from './dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { MulterFile } from '../interfaces/file.interface';
 
 @Injectable()
 export class StepService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
-  async create(dto: CreateStepDto) {
+  async create(dto: CreateStepDto, file?: Express.Multer.File) {
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
+      dto.imgUrl = uploadResult.url;
+    }
+
     // Kiểm tra exercisePost có tồn tại không
     const exercisePost = await this.prisma.exercisePost.findUnique({
       where: { id: dto.exercisePostId }
@@ -67,7 +77,21 @@ export class StepService {
     return step;
   }
 
-  async update(exercisePostId: number, stepNumber: string, dto: UpdateStepDto) {
+  async update(exercisePostId: number, stepNumber: string, dto: UpdateStepDto, file?: Express.Multer.File) {
+    if (file) {
+      const existingStep = await this.findOne(exercisePostId, stepNumber);
+
+      if (existingStep?.imgUrl) {
+        const publicId = existingStep.imgUrl.split('/').pop()?.split('.')[0];
+        if (publicId) {
+          await this.cloudinaryService.deleteImage(publicId);
+        }
+      }
+
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
+      dto.imgUrl = uploadResult.url;
+    }
+
     // Kiểm tra step có tồn tại không
     await this.findOne(exercisePostId, stepNumber);
 

@@ -2,8 +2,8 @@ export class CreateExercisePostDto {
   name: string;
   description: string;
   imgUrl?: string;
-  steps?: CreateStepDto[];
-  tagIds?: number[];
+  steps?: CreateStepDto[] | string;
+  tagIds?: number[] | string;
 }
 
 export class CreateStepDto {
