@@ -9,6 +9,7 @@ import { ExercisePostModule } from './exercise-post/exercise-post.module';
 import { ExercisePostTagModule } from './exercise-post-tag/exercise-post-tag.module';
 import { StepModule } from './step/step.module';
 import { MulterModule } from '@nestjs/platform-express';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MulterModule } from '@nestjs/platform-express';
     ExercisePostModule,
     ExercisePostTagModule,
     StepModule,
+    AuthModule,
     MulterModule.register({
       dest: './uploads',
     }),
