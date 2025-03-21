@@ -23,7 +23,7 @@ export class StepController {
 
   @Get('exercise/:exercisePostId')
   findByExercisePost(@Param('exercisePostId') exercisePostId: string) {
-    return this.stepService.findByExercisePost(+exercisePostId);
+    return this.stepService.findByExercisePostId(+exercisePostId);
   }
 
   @Get(':exercisePostId/:stepNumber')
@@ -53,6 +53,6 @@ export class StepController {
 
   @Delete('exercise/:exercisePostId')
   removeAllSteps(@Param('exercisePostId') exercisePostId: string) {
-    return this.stepService.removeAllSteps(+exercisePostId);
+    return this.stepService.removeByExercisePostId(+exercisePostId);
   }
 } 

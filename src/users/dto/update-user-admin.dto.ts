@@ -11,9 +11,9 @@ export class UpdateUserAdminDto {
 
   @IsOptional()
   @IsNumber()
-  roleId?: number;
+  role_id?: number;
 
   @IsOptional()
   @IsNumber()
-  statusId?: number;
+  Status_id?: number;
 } 

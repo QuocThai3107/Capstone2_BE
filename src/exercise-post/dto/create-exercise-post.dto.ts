@@ -2,6 +2,7 @@ export class CreateExercisePostDto {
   name: string;
   description: string;
   imgUrl?: string;
+  videoUrl?: string;
   steps?: CreateStepDto[];
   tagIds?: number[];
 }

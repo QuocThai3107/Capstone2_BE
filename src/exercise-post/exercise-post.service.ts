@@ -6,28 +6,33 @@ import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
 export class ExercisePostService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateExercisePostDto) {
-    const { steps, tagIds, ...exercisePostData } = dto;
-
-    return this.prisma.exercisePost.create({
+  async create(createExercisePostDto: CreateExercisePostDto) {
+    return this.prisma.exercisepost.create({
       data: {
-        ...exercisePostData,
-        steps: {
-          create: steps?.map(step => ({
-            ...step
-          }))
-        },
-        tags: {
-          create: tagIds?.map(tagId => ({
-            tag: {
-              connect: { id: tagId }
-            }
-          }))
-        }
+        name: createExercisePostDto.name,
+        description: createExercisePostDto.description,
+        img_url: createExercisePostDto.imgUrl,
+        video_rul: createExercisePostDto.videoUrl,
+        step: createExercisePostDto.steps ? {
+          createMany: {
+            data: createExercisePostDto.steps.map(step => ({
+              step_number: step.stepNumber,
+              instruction: step.instruction,
+              img_url: step.imgUrl
+            }))
+          }
+        } : undefined,
+        exerciseposttag: createExercisePostDto.tagIds?.length > 0 ? {
+          createMany: {
+            data: createExercisePostDto.tagIds.map(tagId => ({
+              tag_id: tagId
+            }))
+          }
+        } : undefined
       },
       include: {
-        steps: true,
-        tags: {
+        step: true,
+        exerciseposttag: {
           include: {
             tag: true
           }
@@ -37,10 +42,10 @@ export class ExercisePostService {
   }
 
   async findAll() {
-    return this.prisma.exercisePost.findMany({
+    return this.prisma.exercisepost.findMany({
       include: {
-        steps: true,
-        tags: {
+        step: true,
+        exerciseposttag: {
           include: {
             tag: true
           }
@@ -50,11 +55,11 @@ export class ExercisePostService {
   }
 
   async findOne(id: number) {
-    return this.prisma.exercisePost.findUnique({
-      where: { id },
+    return this.prisma.exercisepost.findUnique({
+      where: { exercisepost_id: id },
       include: {
-        steps: true,
-        tags: {
+        step: true,
+        exerciseposttag: {
           include: {
             tag: true
           }
@@ -63,43 +68,48 @@ export class ExercisePostService {
     });
   }
 
-  async update(id: number, dto: UpdateExercisePostDto) {
-    const { steps, tagIds, ...exercisePostData } = dto;
-
-    // Xóa các steps cũ nếu có steps mới
-    if (steps) {
+  async update(id: number, updateExercisePostDto: UpdateExercisePostDto) {
+    // Delete old steps
+    if (updateExercisePostDto.steps) {
       await this.prisma.step.deleteMany({
-        where: { exercisePostId: id }
+        where: { exercisepost_id: id }
       });
     }
 
-    // Xóa các tags cũ nếu có tags mới
-    if (tagIds) {
-      await this.prisma.exercisepostTag.deleteMany({
-        where: { exercisePostId: id }
+    // Delete old tags
+    if (updateExercisePostDto.tagIds) {
+      await this.prisma.exerciseposttag.deleteMany({
+        where: { exercisepost_id: id }
       });
     }
 
-    return this.prisma.exercisePost.update({
-      where: { id },
+    return this.prisma.exercisepost.update({
+      where: { exercisepost_id: id },
       data: {
-        ...exercisePostData,
-        steps: steps ? {
-          create: steps.map(step => ({
-            ...step
-          }))
+        name: updateExercisePostDto.name,
+        description: updateExercisePostDto.description,
+        img_url: updateExercisePostDto.imgUrl,
+        video_rul: updateExercisePostDto.videoUrl,
+        step: updateExercisePostDto.steps ? {
+          createMany: {
+            data: updateExercisePostDto.steps.map(step => ({
+              step_number: step.stepNumber,
+              instruction: step.instruction,
+              img_url: step.imgUrl
+            }))
+          }
         } : undefined,
-        tags: tagIds ? {
-          create: tagIds.map(tagId => ({
-            tag: {
-              connect: { id: tagId }
-            }
-          }))
+        exerciseposttag: updateExercisePostDto.tagIds?.length > 0 ? {
+          createMany: {
+            data: updateExercisePostDto.tagIds.map(tagId => ({
+              tag_id: tagId
+            }))
+          }
         } : undefined
       },
       include: {
-        steps: true,
-        tags: {
+        step: true,
+        exerciseposttag: {
           include: {
             tag: true
           }
@@ -109,8 +119,8 @@ export class ExercisePostService {
   }
 
   async remove(id: number) {
-    return this.prisma.exercisePost.delete({
-      where: { id }
+    return this.prisma.exercisepost.delete({
+      where: { exercisepost_id: id }
     });
   }
 } 

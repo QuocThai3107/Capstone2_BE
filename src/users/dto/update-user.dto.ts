@@ -26,7 +26,7 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000, { message: 'Thông tin sức khỏe không được quá 1000 ký tự' })
-  healthInformation?: string;
+  Health_information?: string;
 
   @IsOptional()
   @IsString()

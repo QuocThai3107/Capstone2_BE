@@ -10,7 +10,9 @@ export class ExercisePostTagService {
   // Tag management methods
   async createTag(dto: CreateTagDto) {
     return this.prisma.tag.create({
-      data: dto
+      data: {
+        tag_name: dto.tag_name
+      }
     });
   }
 
@@ -18,127 +20,143 @@ export class ExercisePostTagService {
     return this.prisma.tag.findMany();
   }
 
-  async removeTag(id: number) {
-    const tag = await this.prisma.tag.findUnique({
-      where: { id }
-    });
-
-    if (!tag) {
-      throw new NotFoundException(`Tag with ID ${id} not found`);
-    }
-
-    return this.prisma.tag.delete({
-      where: { id }
+  async findTagById(id: number) {
+    return this.prisma.tag.findUnique({
+      where: { tag_id: id }
     });
   }
 
-  // Exercise Post Tag methods
+  async removeTag(id: number) {
+    return this.prisma.tag.delete({
+      where: { tag_id: id }
+    });
+  }
+
+  // Exercise post tag management methods
   async create(dto: CreateExercisePostTagDto) {
-    // Kiểm tra exercisePost có tồn tại không
-    const exercisePost = await this.prisma.exercisePost.findUnique({
-      where: { id: dto.exercisePostId }
+    const exercisePost = await this.prisma.exercisepost.findUnique({
+      where: { exercisepost_id: dto.exercisePostId }
     });
 
     if (!exercisePost) {
-      throw new NotFoundException(`ExercisePost with ID ${dto.exercisePostId} not found`);
+      throw new NotFoundException(`Exercise post with ID ${dto.exercisePostId} not found`);
     }
 
-    // Kiểm tra tag có tồn tại không
-    const tag = await this.prisma.tag.findUnique({
-      where: { id: dto.tagId }
-    });
-
-    if (!tag) {
-      throw new NotFoundException(`Tag with ID ${dto.tagId} not found`);
-    }
-
-    return this.prisma.exercisepostTag.create({
-      data: dto,
+    return this.prisma.exerciseposttag.create({
+      data: {
+        exercisepost_id: dto.exercisePostId,
+        tag_id: dto.tagId
+      },
       include: {
-        exercisePost: true,
+        exercisepost: true,
         tag: true
       }
     });
-  }
-
-  async createMany(dtos: CreateExercisePostTagDto[]) {
-    const createdTags = await Promise.all(
-      dtos.map(dto => this.create(dto))
-    );
-    return createdTags;
   }
 
   async findAll() {
-    return this.prisma.exercisepostTag.findMany({
+    return this.prisma.exerciseposttag.findMany({
       include: {
-        exercisePost: true,
+        exercisepost: true,
         tag: true
       }
     });
   }
 
-  async findByExercisePost(exercisePostId: number) {
-    return this.prisma.exercisepostTag.findMany({
+  async findByExercisePostId(exercisePostId: number) {
+    return this.prisma.exerciseposttag.findMany({
       where: {
-        exercisePostId
+        exercisepost_id: exercisePostId
       },
       include: {
+        exercisepost: true,
         tag: true
       }
     });
   }
 
-  async findByTag(tagId: number) {
-    return this.prisma.exercisepostTag.findMany({
+  async findByTagId(tagId: number) {
+    return this.prisma.exerciseposttag.findMany({
       where: {
-        tagId
+        tag_id: tagId
       },
       include: {
-        exercisePost: true
+        exercisepost: true,
+        tag: true
       }
     });
   }
 
   async findOne(exercisePostId: number, tagId: number) {
-    const exercisePostTag = await this.prisma.exercisepostTag.findUnique({
+    return this.prisma.exerciseposttag.findUnique({
       where: {
-        exercisePostId_tagId: {
-          exercisePostId,
-          tagId
+        exercisepost_id_tag_id: {
+          exercisepost_id: exercisePostId,
+          tag_id: tagId
         }
       },
       include: {
-        exercisePost: true,
+        exercisepost: true,
         tag: true
       }
     });
+  }
 
+  async update(exercisePostId: number, tagId: number, dto: UpdateExercisePostTagDto) {
+    const exercisePostTag = await this.findOne(exercisePostId, tagId);
     if (!exercisePostTag) {
-      throw new NotFoundException(`ExercisePostTag with exercisePostId ${exercisePostId} and tagId ${tagId} not found`);
+      throw new NotFoundException(`Exercise post tag not found`);
     }
 
-    return exercisePostTag;
+    if (dto.tagId) {
+      const tag = await this.findTagById(dto.tagId);
+      if (!tag) {
+        throw new NotFoundException(`Tag with ID ${dto.tagId} not found`);
+      }
+    }
+
+    return this.prisma.exerciseposttag.update({
+      where: {
+        exercisepost_id_tag_id: {
+          exercisepost_id: exercisePostId,
+          tag_id: tagId
+        }
+      },
+      data: {
+        tag_id: dto.tagId
+      },
+      include: {
+        exercisepost: true,
+        tag: true
+      }
+    });
   }
 
   async remove(exercisePostId: number, tagId: number) {
-    // Kiểm tra có tồn tại không
-    await this.findOne(exercisePostId, tagId);
-
-    return this.prisma.exercisepostTag.delete({
+    return this.prisma.exerciseposttag.delete({
       where: {
-        exercisePostId_tagId: {
-          exercisePostId,
-          tagId
+        exercisepost_id_tag_id: {
+          exercisepost_id: exercisePostId,
+          tag_id: tagId
         }
       }
     });
   }
 
-  async removeAllTags(exercisePostId: number) {
-    return this.prisma.exercisepostTag.deleteMany({
+  async removeByExercisePostId(exercisePostId: number) {
+    return this.prisma.exerciseposttag.deleteMany({
       where: {
-        exercisePostId
+        exercisepost_id: exercisePostId
       }
     });
+  }
+
+  // Implementing the missing createMany method
+  async createMany(dtos: CreateExercisePostTagDto[]) {
+    const results = [];
+    for (const dto of dtos) {
+      results.push(await this.create(dto));
+    }
+    return results;
   }
 } 

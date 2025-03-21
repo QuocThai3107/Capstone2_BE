@@ -1,3 +1,7 @@
+import { IsString, IsOptional } from 'class-validator';
+
 export class CreateTagDto {
-    tagName: string;
+  @IsString()
+  @IsOptional()
+  tag_name?: string;
 } 

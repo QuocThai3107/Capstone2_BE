@@ -21,22 +21,25 @@ export class UsersService {
         username: createUserDto.username,
         password: hashedPassword,
         name: createUserDto.name,
-        roleId: createUserDto.roleId,
+        role_id: createUserDto.role_id,
+        email: createUserDto.email,
+        phoneNum: createUserDto.phoneNum,
+        Status_id: createUserDto.Status_id
       },
       select: {
-        id: true,
+        user_id: true,
         username: true,
         name: true,
         email: true,
         phoneNum: true,
-        roleId: true,
-        statusId: true,
+        role_id: true,
+        Status_id: true,
         imgUrl: true,
         introduction: true,
-        healthInformation: true,
+        Health_information: true,
         illness: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
   }
@@ -44,40 +47,40 @@ export class UsersService {
   findAll() {
     return this.prisma.user.findMany({
       select: {
-        id: true,
+        user_id: true,
         username: true,
         name: true,
         email: true,
         phoneNum: true,
-        roleId: true,
-        statusId: true,
+        role_id: true,
+        Status_id: true,
         imgUrl: true,
         introduction: true,
-        healthInformation: true,
+        Health_information: true,
         illness: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
   }
 
   findOne(id: number) {
     return this.prisma.user.findUnique({
-      where: { id },
+      where: { user_id: id },
       select: {
-        id: true,
+        user_id: true,
         username: true,
         name: true,
         email: true,
         phoneNum: true,
-        roleId: true,
-        statusId: true,
+        role_id: true,
+        Status_id: true,
         imgUrl: true,
         introduction: true,
-        healthInformation: true,
+        Health_information: true,
         illness: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
   }
@@ -89,18 +92,18 @@ export class UsersService {
       console.log('Dữ liệu nhận được:', JSON.stringify(updateUserDto, null, 2));
 
       const existingUser = await this.prisma.user.findUnique({
-        where: { id },
+        where: { user_id: id },
         select: {
-          id: true,
+          user_id: true,
           username: true,
           name: true,
           email: true,
           phoneNum: true,
-          roleId: true,
-          statusId: true,
+          role_id: true,
+          Status_id: true,
           imgUrl: true,
           introduction: true,
-          healthInformation: true,
+          Health_information: true,
           illness: true,
         }
       });
@@ -149,9 +152,9 @@ export class UsersService {
         console.log('Cập nhật giới thiệu:', updateData.introduction);
       }
 
-      if ('healthInformation' in updateUserDto) {
-        updateData.healthInformation = updateUserDto.healthInformation?.trim() || null;
-        console.log('Cập nhật thông tin sức khỏe:', updateData.healthInformation);
+      if ('Health_information' in updateUserDto) {
+        updateData.Health_information = updateUserDto.Health_information?.trim() || null;
+        console.log('Cập nhật thông tin sức khỏe:', updateData.Health_information);
       }
 
       if ('illness' in updateUserDto) {
@@ -176,22 +179,22 @@ export class UsersService {
       console.log(JSON.stringify(updateData, null, 2));
 
       const updatedUser = await this.prisma.user.update({
-        where: { id },
+        where: { user_id: id },
         data: updateData,
         select: {
-          id: true,
+          user_id: true,
           username: true,
           name: true,
           email: true,
           phoneNum: true,
-          roleId: true,
-          statusId: true,
+          role_id: true,
+          Status_id: true,
           imgUrl: true,
           introduction: true,
-          healthInformation: true,
+          Health_information: true,
           illness: true,
-          createdAt: true,
-          updatedAt: true,
+          created_at: true,
+          updated_at: true,
         },
       });
 
@@ -208,7 +211,7 @@ export class UsersService {
 
   async updateAdmin(id: number, updateUserAdminDto: UpdateUserAdminDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { id },
+      where: { user_id: id },
     });
 
     if (!existingUser) {
@@ -222,52 +225,52 @@ export class UsersService {
     }
 
     return this.prisma.user.update({
-      where: { id },
+      where: { user_id: id },
       data: {
         username: data.username,
         password: data.password,
-        roleId: data.roleId,
-        statusId: data.statusId,
+        role_id: data.role_id,
+        Status_id: data.Status_id,
       },
       select: {
-        id: true,
+        user_id: true,
         username: true,
         name: true,
         email: true,
         phoneNum: true,
-        roleId: true,
-        statusId: true,
+        role_id: true,
+        Status_id: true,
         imgUrl: true,
         introduction: true,
-        healthInformation: true,
+        Health_information: true,
         illness: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
   }
 
   remove(id: number) {
     return this.prisma.user.delete({
-      where: { id },
+      where: { user_id: id },
     });
   }
 
   async getPublicProfile(id: number) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: { user_id: id },
       select: {
-        id: true,
+        user_id: true,
         username: true,
         name: true,
         email: true,
         phoneNum: true,
         imgUrl: true,
         introduction: true,
-        healthInformation: true,
+        Health_information: true,
         illness: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 

@@ -12,7 +12,7 @@ export class PlanSlotsService {
       
       // Kiểm tra xem planId có tồn tại không
       const plan = await this.prisma.plan.findUnique({
-        where: { id: planId }
+        where: { plan_id: planId }
       });
       
       if (!plan) {
@@ -21,8 +21,8 @@ export class PlanSlotsService {
 
       // Kiểm tra exercisePostId nếu được cung cấp
       if (exercisePostId) {
-        const exercisePost = await this.prisma.exercisePost.findUnique({
-          where: { id: exercisePostId }
+        const exercisePost = await this.prisma.exercisepost.findUnique({
+          where: { exercisepost_id: exercisePostId }
         });
 
         if (!exercisePost) {
@@ -42,14 +42,13 @@ export class PlanSlotsService {
       return await this.prisma.planSlot.create({
         data: {
           id: nextId,
-          planId,
+          planId: planId,
           no: no.toString(),
           note,
-          duration,
-          exercisePostId
+          duration
         },
         include: {
-          exercisePost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -61,12 +60,12 @@ export class PlanSlotsService {
   async findAll(planId: number) {
     try {
       return await this.prisma.planSlot.findMany({
-        where: { planId },
+        where: { planId: planId },
         orderBy: {
           no: 'asc'
         },
         include: {
-          exercisePost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -78,9 +77,14 @@ export class PlanSlotsService {
   async findOne(id: number) {
     try {
       return await this.prisma.planSlot.findUnique({
-        where: { id },
+        where: { 
+          planId_no: {
+            planId: id,
+            no: id.toString()
+          }
+        },
         include: {
-          exercisePost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -95,8 +99,8 @@ export class PlanSlotsService {
 
       // Kiểm tra exercisePostId nếu được cung cấp và không phải null
       if (exercisePostId !== null && exercisePostId !== undefined) {
-        const exercisePost = await this.prisma.exercisePost.findUnique({
-          where: { id: exercisePostId }
+        const exercisePost = await this.prisma.exercisepost.findUnique({
+          where: { exercisepost_id: exercisePostId }
         });
 
         if (!exercisePost) {
@@ -106,14 +110,20 @@ export class PlanSlotsService {
 
       // Nếu exercisePostId là null, điều này có nghĩa là người dùng muốn xóa bài tập khỏi planSlot
       return await this.prisma.planSlot.update({
-        where: { id },
+        where: { 
+          planId_no: {
+            planId: id,
+            no: id.toString()
+          }
+        },
         data: {
           ...rest,
           no: newNo?.toString(),
-          exercisePostId: exercisePostId === null ? null : exercisePostId
+          duration: updateData.duration,
+          note: updateData.note
         },
         include: {
-          exercisePost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -125,7 +135,12 @@ export class PlanSlotsService {
   async remove(id: number) {
     try {
       return await this.prisma.planSlot.delete({
-        where: { id }
+        where: { 
+          planId_no: {
+            planId: id,
+            no: id.toString()
+          }
+        }
       });
     } catch (error) {
       console.error('Remove PlanSlot Error:', error);

@@ -21,9 +21,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     try {
       return {
-        userId: payload.sub,
+        user_id: payload.user_id,
         username: payload.username,
-        roleId: payload.roleId,
+        role_id: payload.role_id,
       };
     } catch (error) {
       console.log('JWT Validation Error:', error);

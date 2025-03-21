@@ -2,17 +2,17 @@ import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CreatePlanDto {
   @IsNumber()
-  userId: number;
+  user_id: number;
 
   @IsString()
   @IsOptional()
-  planName?: string;
+  plan_name?: string;
 
   @IsString()
   @IsOptional()
-  description?: string;
+  Description?: string;
 
   @IsNumber()
   @IsOptional()
-  totalDuration?: number;
+  total_duration?: number;
 } 
