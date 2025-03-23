@@ -38,8 +38,8 @@ export class PrismaAdapter {
     return this.prisma.plan;
   }
 
-  get planslot() {
-    return this.prisma.planslot;
+  get planSlot() {
+    return this.prisma.planSlot;
   }
 
   // Access to the original prisma client

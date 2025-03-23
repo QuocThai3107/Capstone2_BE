@@ -11,19 +11,19 @@ export class PlanSlotsService {
     try {
       const { plan_id, no, note, duration } = createPlanSlotDto;
 
-      const lastPlanSlot = await this.prisma.planslot.findFirst({
+      const lastPlanSlot = await this.prisma.planSlot.findFirst({
         where: {
-          plan_id,
+          planId: plan_id,
         },
         orderBy: {
           no: 'desc',
         },
       });
 
-      return await this.prisma.planslot.create({
+      return await this.prisma.planSlot.create({
         data: {
           id: Math.floor(Math.random() * 1000000),
-          plan_id,
+          planId: plan_id,
           no,
           note,
           duration,
@@ -36,9 +36,9 @@ export class PlanSlotsService {
 
   async findAll(plan_id: number) {
     try {
-      return await this.prisma.planslot.findMany({
-        where: { 
-          plan_id: plan_id,
+      return await this.prisma.planSlot.findMany({
+        where: {
+          planId: plan_id,
         },
         orderBy: {
           no: 'asc'
@@ -55,10 +55,10 @@ export class PlanSlotsService {
 
   async findOne(plan_id: number, no: string) {
     try {
-      return await this.prisma.planslot.findUnique({
+      return await this.prisma.planSlot.findUnique({
         where: {
-          plan_id_no: {
-            plan_id,
+          planId_no: {
+            planId: plan_id,
             no,
           },
         },
@@ -76,10 +76,10 @@ export class PlanSlotsService {
     try {
       const { note, duration } = updateData;
 
-      return await this.prisma.planslot.update({
+      return await this.prisma.planSlot.update({
         where: {
-          plan_id_no: {
-            plan_id,
+          planId_no: {
+            planId: plan_id,
             no,
           },
         },
@@ -95,10 +95,10 @@ export class PlanSlotsService {
 
   async remove(plan_id: number, no: string) {
     try {
-      return await this.prisma.planslot.delete({
+      return await this.prisma.planSlot.delete({
         where: {
-          plan_id_no: {
-            plan_id,
+          planId_no: {
+            planId: plan_id,
             no,
           },
         }

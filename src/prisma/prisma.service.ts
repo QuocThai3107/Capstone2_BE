@@ -4,11 +4,8 @@ import { PrismaAdapter } from './prisma-adapter';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private adapter: PrismaAdapter;
-
-  constructor() {
+  constructor(private adapter: PrismaAdapter) {
     super();
-    this.adapter = new PrismaAdapter(this);
   }
 
   async onModuleInit() {
@@ -40,8 +37,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     return this.adapter.plan;
   }
 
-  get planslot() {
-    return this.adapter.planslot;
+  get planSlot() {
+    return this.adapter.planSlot;
   }
 
   get user() {

@@ -39,9 +39,14 @@ model exercisepost {
   name            String?           @db.VarChar(50)
   description     String?           @db.Text
   img_url         String?           @db.Text
+  status_id       Int?
+  user_id         Int
   video_rul       String?           @db.Text
+  user            user              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "exercisepost_ibfk_1")
   exerciseposttag exerciseposttag[]
   step            step[]
+
+  @@index([user_id], map: "user_id")
 }
 
 model exerciseposttag {
@@ -145,25 +150,38 @@ model tag {
 }
 
 model user {
-  user_id                    Int          @id @default(autoincrement())
-  username                   String?      @db.VarChar(64)
-  password                   String?      @db.VarChar(64)
-  email                      String?      @db.VarChar(255)
-  phoneNum                   String?      @db.VarChar(10)
+  user_id                    Int            @id @default(autoincrement())
+  username                   String?        @db.VarChar(64)
+  password                   String?        @db.VarChar(64)
+  email                      String?        @db.VarChar(255)
+  phoneNum                   String?        @db.VarChar(10)
   role_id                    Int?
   Status_id                  Int?
-  created_at                 DateTime     @default(now())
-  updated_at                 DateTime     @default(now())
-  name                       String?      @db.VarChar(50)
-  imgUrl                     String?      @db.Text
-  introduction               String?      @db.Text
-  Health_information         String?      @db.Text
-  illness                    String?      @db.Text
-  chat_chat_to_user_idTouser chat[]       @relation("chat_to_user_idTouser")
-  chat_chat_user_idTouser    chat[]       @relation("chat_user_idTouser")
+  created_at                 DateTime       @default(now())
+  updated_at                 DateTime       @default(now())
+  name                       String?        @db.VarChar(50)
+  imgUrl                     String?        @db.Text
+  introduction               String?        @db.Text
+  Health_information         String?        @db.Text
+  illness                    String?        @db.Text
+  gym                        String?        @db.VarChar(50)
+  refresh_token              String?        @db.Text
+  certificate                certificate[]
+  chat_chat_to_user_idTouser chat[]         @relation("chat_to_user_idTouser")
+  chat_chat_user_idTouser    chat[]         @relation("chat_user_idTouser")
+  exercisepost               exercisepost[]
   membership                 membership[]
   payment                    payment[]
   plan                       plan[]
   recommend                  recommend[]
   schedule                   schedule[]
+}
+
+model certificate {
+  user_id Int
+  imgurl  String @db.VarChar(255)
+  user    user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "certificate_ibfk_1")
+
+  @@id([user_id, imgurl])
+  @@index([user_id], map: "user_id")
 }
