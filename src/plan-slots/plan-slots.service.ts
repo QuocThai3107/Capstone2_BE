@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlanSlotDto } from './dto/create-plan-slot.dto';
+import { UpdatePlanSlotDto } from './dto/update-plan-slot.dto';
 
 @Injectable()
 export class PlanSlotsService {
@@ -8,65 +9,42 @@ export class PlanSlotsService {
 
   async create(createPlanSlotDto: CreatePlanSlotDto) {
     try {
-      const { planId, no, note, duration, exercisePostId } = createPlanSlotDto;
-      
-      // Kiểm tra xem planId có tồn tại không
-      const plan = await this.prisma.plan.findUnique({
-        where: { id: planId }
-      });
-      
-      if (!plan) {
-        throw new NotFoundException(`Plan with ID ${planId} does not exist`);
-      }
+      const { plan_id, no, note, duration } = createPlanSlotDto;
 
-      // Kiểm tra exercisePostId nếu được cung cấp
-      if (exercisePostId) {
-        const exercisePost = await this.prisma.exercisePost.findUnique({
-          where: { id: exercisePostId }
-        });
-
-        if (!exercisePost) {
-          throw new NotFoundException(`ExercisePost with ID ${exercisePostId} does not exist`);
-        }
-      }
-
-      // Tìm ID lớn nhất hiện tại
       const lastPlanSlot = await this.prisma.planSlot.findFirst({
+        where: {
+          planId: plan_id,
+        },
         orderBy: {
-          id: 'desc'
-        }
+          no: 'desc',
+        },
       });
-
-      const nextId = lastPlanSlot ? lastPlanSlot.id + 1 : 1;
 
       return await this.prisma.planSlot.create({
         data: {
-          id: nextId,
-          planId,
-          no: no.toString(),
+          id: Math.floor(Math.random() * 1000000),
+          planId: plan_id,
+          no,
           note,
           duration,
-          exercisePostId
         },
-        include: {
-          exercisePost: true
-        }
       });
     } catch (error) {
-      console.error('Create PlanSlot Error:', error);
-      throw error;
+      throw new Error(error);
     }
   }
 
-  async findAll(planId: number) {
+  async findAll(plan_id: number) {
     try {
       return await this.prisma.planSlot.findMany({
-        where: { planId },
+        where: {
+          planId: plan_id,
+        },
         orderBy: {
           no: 'asc'
         },
         include: {
-          exercisePost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -75,12 +53,17 @@ export class PlanSlotsService {
     }
   }
 
-  async findOne(id: number) {
+  async findOne(plan_id: number, no: string) {
     try {
       return await this.prisma.planSlot.findUnique({
-        where: { id },
+        where: {
+          planId_no: {
+            planId: plan_id,
+            no,
+          },
+        },
         include: {
-          exercisePost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -89,43 +72,36 @@ export class PlanSlotsService {
     }
   }
 
-  async update(id: number, updateData: Partial<CreatePlanSlotDto>) {
+  async update(plan_id: number, no: string, updateData: UpdatePlanSlotDto) {
     try {
-      const { no: newNo, exercisePostId, ...rest } = updateData;
+      const { note, duration } = updateData;
 
-      // Kiểm tra exercisePostId nếu được cung cấp và không phải null
-      if (exercisePostId !== null && exercisePostId !== undefined) {
-        const exercisePost = await this.prisma.exercisePost.findUnique({
-          where: { id: exercisePostId }
-        });
-
-        if (!exercisePost) {
-          throw new NotFoundException(`ExercisePost with ID ${exercisePostId} does not exist`);
-        }
-      }
-
-      // Nếu exercisePostId là null, điều này có nghĩa là người dùng muốn xóa bài tập khỏi planSlot
       return await this.prisma.planSlot.update({
-        where: { id },
-        data: {
-          ...rest,
-          no: newNo?.toString(),
-          exercisePostId: exercisePostId === null ? null : exercisePostId
+        where: {
+          planId_no: {
+            planId: plan_id,
+            no,
+          },
         },
-        include: {
-          exercisePost: true
-        }
+        data: {
+          note,
+          duration,
+        },
       });
     } catch (error) {
-      console.error('Update PlanSlot Error:', error);
-      throw error;
+      throw new Error(error);
     }
   }
 
-  async remove(id: number) {
+  async remove(plan_id: number, no: string) {
     try {
       return await this.prisma.planSlot.delete({
-        where: { id }
+        where: {
+          planId_no: {
+            planId: plan_id,
+            no,
+          },
+        }
       });
     } catch (error) {
       console.error('Remove PlanSlot Error:', error);

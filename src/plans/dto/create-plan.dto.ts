@@ -1,18 +1,19 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePlanDto {
+  @IsNotEmpty()
   @IsNumber()
-  userId: number;
+  user_id: number;
 
+  @IsNotEmpty()
   @IsString()
-  @IsOptional()
-  planName?: string;
+  plan_name: string;
 
+  @IsOptional()
   @IsString()
-  @IsOptional()
-  description?: string;
+  Description?: string;
 
+  @IsOptional()
   @IsNumber()
-  @IsOptional()
-  totalDuration?: number;
+  total_duration?: number;
 } 

@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 
 @Injectable()
 export class PlansService {
   constructor(private prisma: PrismaService) {}
 
   async create(createPlanDto: CreatePlanDto) {
-    return this.prisma.plan.create({
+    return await this.prisma.plan.create({
       data: createPlanDto,
       include: {
         planSlots: true
@@ -16,9 +17,9 @@ export class PlansService {
   }
 
   async findAll(userId: number) {
-    return this.prisma.plan.findMany({
+    return await this.prisma.plan.findMany({
       where: {
-        userId: Number(userId)
+        user_id: userId
       },
       include: {
         planSlots: true
@@ -27,18 +28,18 @@ export class PlansService {
   }
 
   async findOne(id: number) {
-    return this.prisma.plan.findUnique({
-      where: { id },
+    return await this.prisma.plan.findUnique({
+      where: { plan_id: id },
       include: {
         planSlots: true
       }
     });
   }
 
-  async update(id: number, updateData: Partial<CreatePlanDto>) {
-    return this.prisma.plan.update({
-      where: { id },
-      data: updateData,
+  async update(id: number, updatePlanDto: UpdatePlanDto) {
+    return await this.prisma.plan.update({
+      where: { plan_id: id },
+      data: updatePlanDto,
       include: {
         planSlots: true
       }
@@ -46,14 +47,16 @@ export class PlansService {
   }
 
   async remove(id: number) {
-    // Xóa tất cả plan slots trước
     await this.prisma.planSlot.deleteMany({
-      where: { planId: id }
+      where: {
+        planId: id,
+      },
     });
 
-    // Sau đó xóa plan
-    return this.prisma.plan.delete({
-      where: { id }
+    return await this.prisma.plan.delete({
+      where: {
+        plan_id: id,
+      },
     });
   }
 } 

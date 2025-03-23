@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
+import { RoleGuard } from './guards/role.guard';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 const JWT_SECRET = 'Capstone2BE_2024!@#SECURE_JWT_KEY_987654321';
 
@@ -17,10 +19,11 @@ const JWT_SECRET = 'Capstone2BE_2024!@#SECURE_JWT_KEY_987654321';
     PassportModule,
     JwtModule.register({
       secret: JWT_SECRET,
-      signOptions: { expiresIn: '365d' },
+      signOptions: { expiresIn: '1d' },
     }),
+    CloudinaryModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, RoleGuard],
   controllers: [AuthController],
   exports: [AuthService],
 })

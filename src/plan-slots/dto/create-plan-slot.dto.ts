@@ -1,20 +1,19 @@
-import { IsNumber, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePlanSlotDto {
+  @IsNotEmpty()
   @IsNumber()
-  planId: number;
+  plan_id: number;
 
-  @IsNumber()
-  no: number;
-
+  @IsNotEmpty()
   @IsString()
+  no: string;
+
   @IsOptional()
+  @IsString()
   note?: string;
 
-  @IsNumber()
-  duration: number;
-
-  @IsNumber()
   @IsOptional()
-  exercisePostId?: number;
+  @IsNumber()
+  duration?: number;
 } 

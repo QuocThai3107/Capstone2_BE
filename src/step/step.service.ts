@@ -14,20 +14,28 @@ export class StepService {
   async create(dto: CreateStepDto, file?: Express.Multer.File) {
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadImage(file);
-      dto.imgUrl = uploadResult.url;
+      dto.img_url = uploadResult.url;
     }
 
-    // Kiểm tra exercisePost có tồn tại không
-    const exercisePost = await this.prisma.exercisePost.findUnique({
-      where: { id: dto.exercisePostId }
+    // Check if exercise post exists
+    const exercisePost = await this.prisma.exercisepost.findUnique({
+      where: { exercisepost_id: dto.exercisepost_id }
     });
 
     if (!exercisePost) {
-      throw new NotFoundException(`ExercisePost with ID ${dto.exercisePostId} not found`);
+      throw new Error('Exercise post not found');
     }
 
     return this.prisma.step.create({
-      data: dto
+      data: {
+        exercisepost_id: dto.exercisepost_id,
+        step_number: dto.step_number,
+        instruction: dto.instruction,
+        img_url: dto.img_url
+      },
+      include: {
+        exercisepost: true
+      }
     });
   }
 
@@ -41,89 +49,78 @@ export class StepService {
   async findAll() {
     return this.prisma.step.findMany({
       include: {
-        exercisePost: true
+        exercisepost: true
       }
     });
   }
 
-  async findByExercisePost(exercisePostId: number) {
+  async findByExercisePostId(exercisepost_id: number) {
     return this.prisma.step.findMany({
       where: {
-        exercisePostId
+        exercisepost_id
       },
       orderBy: {
-        stepNumber: 'asc'
+        step_number: 'asc'
+      },
+      include: {
+        exercisepost: true
       }
     });
   }
 
-  async findOne(exercisePostId: number, stepNumber: string) {
+  async findOne(exercisepost_id: number, step_number: string) {
     const step = await this.prisma.step.findUnique({
       where: {
-        exercisePostId_stepNumber: {
-          exercisePostId,
-          stepNumber
+        exercisepost_id_step_number: {
+          exercisepost_id,
+          step_number
         }
       },
       include: {
-        exercisePost: true
+        exercisepost: true
       }
     });
 
     if (!step) {
-      throw new NotFoundException(`Step ${stepNumber} for exercisePost ${exercisePostId} not found`);
+      throw new Error('Step not found');
     }
 
     return step;
   }
 
-  async update(exercisePostId: number, stepNumber: string, dto: UpdateStepDto, file?: Express.Multer.File) {
-    if (file) {
-      const existingStep = await this.findOne(exercisePostId, stepNumber);
-
-      if (existingStep?.imgUrl) {
-        const publicId = existingStep.imgUrl.split('/').pop()?.split('.')[0];
-        if (publicId) {
-          await this.cloudinaryService.deleteImage(publicId);
-        }
-      }
-
-      const uploadResult = await this.cloudinaryService.uploadImage(file);
-      dto.imgUrl = uploadResult.url;
-    }
-
-    // Kiểm tra step có tồn tại không
-    await this.findOne(exercisePostId, stepNumber);
-
+  async update(exercisepost_id: number, step_number: string, dto: UpdateStepDto) {
     return this.prisma.step.update({
       where: {
-        exercisePostId_stepNumber: {
-          exercisePostId,
-          stepNumber
+        exercisepost_id_step_number: {
+          exercisepost_id,
+          step_number
         }
       },
-      data: dto
+      data: {
+        instruction: dto.instruction,
+        img_url: dto.img_url
+      },
+      include: {
+        exercisepost: true
+      }
     });
   }
 
-  async remove(exercisePostId: number, stepNumber: string) {
-    // Kiểm tra step có tồn tại không
-    await this.findOne(exercisePostId, stepNumber);
-
+  async remove(exercisepost_id: number, step_number: string) {
     return this.prisma.step.delete({
       where: {
-        exercisePostId_stepNumber: {
-          exercisePostId,
-          stepNumber
+        exercisepost_id_step_number: {
+          exercisepost_id,
+          step_number
         }
       }
     });
   }
 
-  async removeAllSteps(exercisePostId: number) {
+  async removeByExercisePostId(exercisepost_id: number) {
     return this.prisma.step.deleteMany({
       where: {
-        exercisePostId
+        exercisepost_id
       }
     });
   }
