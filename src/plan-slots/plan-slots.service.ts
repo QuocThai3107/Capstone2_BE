@@ -22,7 +22,6 @@ export class PlanSlotsService {
 
       return await this.prisma.planSlot.create({
         data: {
-          id: Math.floor(Math.random() * 1000000),
           planId: plan_id,
           no,
           note,
@@ -55,12 +54,10 @@ export class PlanSlotsService {
 
   async findOne(plan_id: number, no: string) {
     try {
-      return await this.prisma.planSlot.findUnique({
+      return await this.prisma.planSlot.findFirst({
         where: {
-          planId_no: {
-            planId: plan_id,
-            no,
-          },
+          planId: plan_id,
+          no: no,
         },
         include: {
           plan: true
@@ -76,12 +73,10 @@ export class PlanSlotsService {
     try {
       const { note, duration } = updateData;
 
-      return await this.prisma.planSlot.update({
+      return await this.prisma.planSlot.updateMany({
         where: {
-          planId_no: {
-            planId: plan_id,
-            no,
-          },
+          planId: plan_id,
+          no: no,
         },
         data: {
           note,
@@ -95,12 +90,10 @@ export class PlanSlotsService {
 
   async remove(plan_id: number, no: string) {
     try {
-      return await this.prisma.planSlot.delete({
+      return await this.prisma.planSlot.deleteMany({
         where: {
-          planId_no: {
-            planId: plan_id,
-            no,
-          },
+          planId: plan_id,
+          no: no,
         }
       });
     } catch (error) {
