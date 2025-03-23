@@ -1,9 +1,11 @@
-import { Body, Controller, Post, UseGuards, Request, Get } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request, Get, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CreateUserDto } from '../users/dto';
 import { GetUser } from './decorator';
+import { CreatePTDto } from './dto/create-pt.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -36,5 +38,14 @@ export class AuthController {
   @Get('me')
   getMe(@GetUser('user_id') userId: number) {
     return this.authService.getCurrentUserRole(userId);
+  }
+
+  @Post('register-pt')
+  @UseInterceptors(FilesInterceptor('certificates', 10)) // Cho phép upload tối đa 10 ảnh
+  async registerPT(
+    @Body() createPTDto: CreatePTDto,
+    @UploadedFiles() certificates: Array<Express.Multer.File>
+  ) {
+    return this.authService.registerPT(createPTDto, certificates);
   }
 } 
