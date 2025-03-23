@@ -1,4 +1,5 @@
 export class CreateExercisePostDto {
+  user_id: number;
   name: string;
   description: string;
   imgUrl?: string;

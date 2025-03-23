@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -279,5 +279,46 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  async getPTDetail(id: number) {
+    try {
+      const ptDetail = await this.prisma.user.findFirst({
+        where: {
+          user_id: id,
+          role_id: 2, // Role PT
+        },
+        select: {
+          user_id: true,
+          username: true,
+          email: true,
+          phoneNum: true,
+          name: true,
+          imgUrl: true,
+          introduction: true,
+          gym: true,
+          certificate: {
+            select: {
+              imgurl: true
+            }
+          }
+        }
+      });
+
+      if (!ptDetail) {
+        throw new NotFoundException('Không tìm thấy PT với ID này');
+      }
+
+      return {
+        status: 'success',
+        data: ptDetail
+      };
+      
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Có lỗi xảy ra khi lấy thông tin PT');
+    }
   }
 } 

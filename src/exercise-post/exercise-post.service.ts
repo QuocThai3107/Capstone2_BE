@@ -11,12 +11,17 @@ export class ExercisePostService {
   ) {}
 
   async create(createExercisePostDto: CreateExercisePostDto) {
-    return this.prisma.exercisepost.create({
+    const result = await this.prisma.exercisepost.create({
       data: {
         name: createExercisePostDto.name,
         description: createExercisePostDto.description,
         img_url: createExercisePostDto.imgUrl,
         video_rul: createExercisePostDto.videoUrl,
+        user: {
+          connect: {
+            user_id: createExercisePostDto.user_id
+          }
+        },
         step: createExercisePostDto.steps ? {
           createMany: {
             data: createExercisePostDto.steps.map(step => ({
@@ -43,7 +48,6 @@ export class ExercisePostService {
         }
       }
     });
-
     return result;
   }
 

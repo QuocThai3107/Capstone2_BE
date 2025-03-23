@@ -8,12 +8,11 @@ export class ExercisePostController {
   constructor(private readonly exercisePostService: ExercisePostService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('file'))
   create(
     @Body() createExercisePostDto: CreateExercisePostDto,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.exercisePostService.create(createExercisePostDto, file);
+    return this.exercisePostService.create(createExercisePostDto);
   }
 
   @Get()
@@ -27,13 +26,12 @@ export class ExercisePostController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('file'))
   update(
     @Param('id') id: string,
     @Body() updateExercisePostDto: UpdateExercisePostDto,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.exercisePostService.update(+id, updateExercisePostDto, file);
+    return this.exercisePostService.update(+id, updateExercisePostDto);
   }
 
   @Delete(':id')

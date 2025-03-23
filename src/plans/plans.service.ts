@@ -15,7 +15,7 @@ export class PlansService {
         user_id: createPlanDto.user_id
       },
       include: {
-        planSlots: true
+        planslot: true
       }
     });
   }
@@ -26,7 +26,7 @@ export class PlansService {
         user_id: Number(userId)
       },
       include: {
-        planSlots: true
+        planslot: true
       }
     });
   }
@@ -35,7 +35,7 @@ export class PlansService {
     return this.prisma.plan.findUnique({
       where: { plan_id: id },
       include: {
-        planSlots: true
+        planslot: true
       }
     });
   }
@@ -50,15 +50,15 @@ export class PlansService {
         user_id: updateData.user_id
       },
       include: {
-        planSlots: true
+        planslot: true
       }
     });
   }
 
   async remove(id: number) {
     // Xóa tất cả plan slots trước
-    await this.prisma.planSlot.deleteMany({
-      where: { planId: id }
+    await this.prisma.planslot.deleteMany({
+      where: { plan_id: id }
     });
 
     // Sau đó xóa plan

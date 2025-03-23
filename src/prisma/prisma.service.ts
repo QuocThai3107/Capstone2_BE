@@ -40,8 +40,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     return this.adapter.plan;
   }
 
-  get planSlot() {
-    return this.adapter.planSlot;
+  get planslot() {
+    return this.adapter.planslot;
   }
 
   get user() {

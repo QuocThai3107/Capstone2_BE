@@ -14,10 +14,9 @@ export class StepService {
   async create(dto: CreateStepDto, file?: Express.Multer.File) {
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadImage(file);
-      dto.imgUrl = uploadResult.url;
+      dto.img_url = uploadResult.url;
     }
 
-  async create(dto: CreateStepDto) {
     // Check if exercise post exists
     const exercisePost = await this.prisma.exercisepost.findUnique({
       where: { exercisepost_id: dto.exercisepost_id }

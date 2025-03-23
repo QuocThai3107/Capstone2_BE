@@ -13,8 +13,8 @@ export class StepController {
     @Body() createStepDto: CreateStepDto,
     @UploadedFile() file?: Express.Multer.File
   ) {
-    if (createStepDto.exercisePostId) {
-      createStepDto.exercisePostId = +createStepDto.exercisePostId;
+    if (createStepDto.exercisepost_id) {
+      createStepDto.exercisepost_id = +createStepDto.exercisepost_id;
     }
     return this.stepService.create(createStepDto, file);
   }
@@ -23,7 +23,7 @@ export class StepController {
   createMany(@Body() createStepDtos: CreateStepDto[]) {
     createStepDtos = createStepDtos.map(dto => ({
       ...dto,
-      exercisePostId: +dto.exercisePostId
+      exercisepost_id: +dto.exercisepost_id
     }));
     return this.stepService.createMany(createStepDtos);
   }
@@ -47,14 +47,13 @@ export class StepController {
   }
 
   @Patch(':exercisePostId/:stepNumber')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('file'))
   update(
     @Param('exercisePostId') exercisePostId: string,
     @Param('stepNumber') stepNumber: string,
     @Body() updateStepDto: UpdateStepDto,
-    @UploadedFile() file?: Express.Multer.File
   ) {
-    return this.stepService.update(+exercisePostId, stepNumber, updateStepDto, file);
+    return this.stepService.update(+exercisePostId, stepNumber, updateStepDto);
   }
 
   @Delete(':exercisePostId/:stepNumber')
