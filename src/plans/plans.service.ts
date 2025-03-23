@@ -8,7 +8,12 @@ export class PlansService {
 
   async create(createPlanDto: CreatePlanDto) {
     return this.prisma.plan.create({
-      data: createPlanDto,
+      data: {
+        plan_name: createPlanDto.plan_name,
+        Description: createPlanDto.Description,
+        total_duration: createPlanDto.total_duration,
+        user_id: createPlanDto.user_id
+      },
       include: {
         planSlots: true
       }
@@ -18,7 +23,7 @@ export class PlansService {
   async findAll(userId: number) {
     return this.prisma.plan.findMany({
       where: {
-        userId: Number(userId)
+        user_id: Number(userId)
       },
       include: {
         planSlots: true
@@ -28,7 +33,7 @@ export class PlansService {
 
   async findOne(id: number) {
     return this.prisma.plan.findUnique({
-      where: { id },
+      where: { plan_id: id },
       include: {
         planSlots: true
       }
@@ -37,8 +42,13 @@ export class PlansService {
 
   async update(id: number, updateData: Partial<CreatePlanDto>) {
     return this.prisma.plan.update({
-      where: { id },
-      data: updateData,
+      where: { plan_id: id },
+      data: {
+        plan_name: updateData.plan_name,
+        Description: updateData.Description,
+        total_duration: updateData.total_duration,
+        user_id: updateData.user_id
+      },
       include: {
         planSlots: true
       }
@@ -53,7 +63,7 @@ export class PlansService {
 
     // Sau đó xóa plan
     return this.prisma.plan.delete({
-      where: { id }
+      where: { plan_id: id }
     });
   }
 } 

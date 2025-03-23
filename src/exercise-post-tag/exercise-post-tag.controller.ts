@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ExercisePostTagService } from './exercise-post-tag.service';
-import { CreateExercisePostTagDto } from './dto';
+import { CreateExercisePostTagDto, UpdateExercisePostTagDto } from './dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 
-@Controller('exercise-post-tags')
+@Controller('exercise-post-tag')
 export class ExercisePostTagController {
   constructor(private readonly exercisePostTagService: ExercisePostTagService) {}
 
@@ -13,7 +13,7 @@ export class ExercisePostTagController {
     return this.exercisePostTagService.createTag(createTagDto);
   }
 
-  @Get('tags')
+  @Get('tag')
   findAllTags() {
     return this.exercisePostTagService.findAllTags();
   }
@@ -29,7 +29,7 @@ export class ExercisePostTagController {
     return this.exercisePostTagService.create(createExercisePostTagDto);
   }
 
-  @Post('bulk')
+  @Post('many')
   createMany(@Body() createExercisePostTagDtos: CreateExercisePostTagDto[]) {
     return this.exercisePostTagService.createMany(createExercisePostTagDtos);
   }
@@ -39,34 +39,43 @@ export class ExercisePostTagController {
     return this.exercisePostTagService.findAll();
   }
 
-  @Get('exercise/:exercisePostId')
-  findByExercisePost(@Param('exercisePostId') exercisePostId: string) {
-    return this.exercisePostTagService.findByExercisePost(+exercisePostId);
+  @Get('exercise-post/:exercisePostId')
+  findByExercisePostId(@Param('exercisePostId') exercisePostId: string) {
+    return this.exercisePostTagService.findByExercisePostId(+exercisePostId);
   }
 
   @Get('tag/:tagId')
-  findByTag(@Param('tagId') tagId: string) {
-    return this.exercisePostTagService.findByTag(+tagId);
+  findByTagId(@Param('tagId') tagId: string) {
+    return this.exercisePostTagService.findByTagId(+tagId);
   }
 
   @Get(':exercisePostId/:tagId')
   findOne(
     @Param('exercisePostId') exercisePostId: string,
-    @Param('tagId') tagId: string
+    @Param('tagId') tagId: string,
   ) {
     return this.exercisePostTagService.findOne(+exercisePostId, +tagId);
+  }
+
+  @Patch(':exercisePostId/:tagId')
+  update(
+    @Param('exercisePostId') exercisePostId: string,
+    @Param('tagId') tagId: string,
+    @Body() updateExercisePostTagDto: UpdateExercisePostTagDto,
+  ) {
+    return this.exercisePostTagService.update(+exercisePostId, +tagId, updateExercisePostTagDto);
   }
 
   @Delete(':exercisePostId/:tagId')
   remove(
     @Param('exercisePostId') exercisePostId: string,
-    @Param('tagId') tagId: string
+    @Param('tagId') tagId: string,
   ) {
     return this.exercisePostTagService.remove(+exercisePostId, +tagId);
   }
 
-  @Delete('exercise/:exercisePostId')
-  removeAllTags(@Param('exercisePostId') exercisePostId: string) {
-    return this.exercisePostTagService.removeAllTags(+exercisePostId);
+  @Delete('exercise-post/:exercisePostId')
+  removeByExercisePostId(@Param('exercisePostId') exercisePostId: string) {
+    return this.exercisePostTagService.removeByExercisePostId(+exercisePostId);
   }
 } 
