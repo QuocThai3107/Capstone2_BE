@@ -321,4 +321,67 @@ export class UsersService {
       throw new InternalServerErrorException('Có lỗi xảy ra khi lấy thông tin PT');
     }
   }
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: userId },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        phoneNum: true,
+        role_id: true,
+        name: true,
+        imgUrl: true,
+        introduction: true,
+        Health_information: true,
+        illness: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    return {
+      status: 'success',
+      data: user,
+    };
+  }
+
+  async getPTProfile(userId: number) {
+    const user = await this.prisma.user.findFirst({
+      where: { 
+        user_id: userId,
+        role_id: 3, // Role PT
+      },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        phoneNum: true,
+        role_id: true,
+        name: true,
+        imgUrl: true,
+        introduction: true,
+        Health_information: true,
+        illness: true,
+        gym: true,
+        certificate: {
+          select: {
+            imgurl: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy thông tin PT');
+    }
+
+    return {
+      status: 'success',
+      data: user,
+    };
+  }
 } 

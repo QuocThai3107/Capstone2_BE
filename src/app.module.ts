@@ -10,6 +10,7 @@ import { ExercisePostTagModule } from './exercise-post-tag/exercise-post-tag.mod
 import { StepModule } from './step/step.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from './auth/auth.module';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuthModule } from './auth/auth.module';
     MulterModule.register({
       dest: './uploads',
     }),
+    ScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,6 +6,7 @@ import { UpdateUserAdminDto } from './dto/update-user-admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterFile } from '../interfaces/file.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorator';
 
 @Controller('users')
 export class UsersController {
@@ -58,5 +59,17 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getPTDetail(@Param('id') id: string) {
     return this.usersService.getPTDetail(+id);
+  }
+
+  @Get('profile/me')
+  @UseGuards(JwtAuthGuard)
+  async getMyProfile(@GetUser('user_id') userId: number) {
+    return this.usersService.getProfile(userId);
+  }
+
+  @Get('profile/pt/me')
+  @UseGuards(JwtAuthGuard)
+  async getMyPTProfile(@GetUser('user_id') userId: number) {
+    return this.usersService.getPTProfile(userId);
   }
 } 

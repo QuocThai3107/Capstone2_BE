@@ -1,17 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { ExercisePostService } from './exercise-post.service';
 import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorator';
 
-@Controller('exercise-posts')
+@Controller('exercise-post')
+@UseGuards(JwtAuthGuard)
 export class ExercisePostController {
   constructor(private readonly exercisePostService: ExercisePostService) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   create(
+    @GetUser('user_id') userId: number,
     @Body() createExercisePostDto: CreateExercisePostDto,
   ) {
+    createExercisePostDto.user_id = userId;
     return this.exercisePostService.create(createExercisePostDto);
   }
 
