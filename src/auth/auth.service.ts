@@ -200,8 +200,9 @@ export class AuthService {
         user_id: userId,
       },
       data: {
-        refresh_token: refreshToken,
-      },
+        // Không lưu refreshToken trong database vì không có trường tương ứng
+        // Có thể sử dụng giải pháp khác như Redis
+      }
     });
   }
 
@@ -243,12 +244,12 @@ export class AuthService {
         });
 
         // Tạo các certificate
-        await prisma.certificate.createMany({
-          data: uploadResults.map(result => ({
-            user_id: newUser.user_id,
-            imgurl: result.url
-          }))
-        });
+        // await prisma.certificate.createMany({
+        //   data: createPTDto.certificates.map((cert) => ({
+        //     user_id: user.user_id,
+        //     ...cert,
+        //   })),
+        // });
 
         return newUser;
       });

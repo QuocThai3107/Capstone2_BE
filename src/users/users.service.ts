@@ -85,6 +85,28 @@ export class UsersService {
     });
   }
 
+  findOneWithAll(id: number) {
+    return this.prisma.user.findUnique({
+      where: { user_id: id },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        email: true,
+        phoneNum: true,
+        role_id: true,
+        Status_id: true,
+        imgUrl: true,
+        introduction: true,
+        Health_information: true,
+        illness: true,
+        gym: true,
+        created_at: true,
+        updated_at: true,
+      }
+    });
+  }
+
   async updateProfile(id: number, updateUserDto: UpdateUserDto, file?: MulterFile) {
     try {
       console.log('=== Bắt đầu cập nhật profile ===');
@@ -283,7 +305,7 @@ export class UsersService {
 
   async getPTDetail(id: number) {
     try {
-      const ptDetail = await this.prisma.user.findFirst({
+      const ptDetail = await this.prisma.user.findUnique({
         where: {
           user_id: id,
           role_id: 2, // Role PT
@@ -297,11 +319,12 @@ export class UsersService {
           imgUrl: true,
           introduction: true,
           gym: true,
-          certificate: {
-            select: {
-              imgurl: true
-            }
-          }
+          // certificate đã bị đánh dấu @@ignore trong schema.prisma nên không thể sử dụng
+          // certificate: {
+          //   select: {
+          //     imgurl: true
+          //   }
+          // }
         }
       });
 

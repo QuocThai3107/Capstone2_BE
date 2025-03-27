@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { PlanSlotsService } from './plan-slots.service';
 import { CreatePlanSlotDto } from './dto/create-plan-slot.dto';
 import { UpdatePlanSlotDto } from './dto/update-plan-slot.dto';
+import { Public } from '../auth/decorator';
 
 @Controller('plan-slots')
 export class PlanSlotsController {
@@ -12,11 +13,15 @@ export class PlanSlotsController {
     return this.planSlotsService.create(createPlanSlotDto);
   }
 
+  @Public()
   @Get()
-  findAll(@Query('planId') planId: number) {
-    return this.planSlotsService.findAll(planId);
+  findAll(@Query('planId') planId: string) {
+    // Chuyển đổi planId từ string sang number
+    const numericPlanId = planId ? Number(planId) : undefined;
+    return this.planSlotsService.findAll(numericPlanId);
   }
 
+  @Public()
   @Get(':plan_id/:no')
   findOne(
     @Param('plan_id') plan_id: string,
