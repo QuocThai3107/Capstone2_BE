@@ -12,6 +12,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     MulterModule.register({
       dest: './uploads',
     }),
+    ScheduleModule,
   ],
   controllers: [AppController],
   providers: [
