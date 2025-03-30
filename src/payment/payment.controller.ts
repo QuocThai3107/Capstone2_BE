@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,12 +10,16 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post()
-  async createPayment(
-    @GetUser('user_id') userId: number,
-    @Body() createPaymentDto: CreatePaymentDto
-  ) {
-    createPaymentDto.user_id = userId;
-    return this.paymentService.createPayment(createPaymentDto);
+  async create(@Body() createPaymentDto: CreatePaymentDto) {
+    try {
+      return await this.paymentService.create(createPaymentDto);
+    } catch (error) {
+      throw new HttpException({
+        statusCode: 500,
+        message: 'Không thể tạo thanh toán',
+        error: error.message
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('callback')

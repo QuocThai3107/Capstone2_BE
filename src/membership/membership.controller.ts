@@ -6,11 +6,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorator';
 
 @Controller('membership')
-@UseGuards(JwtAuthGuard)
 export class MembershipController {
   constructor(private readonly membershipService: MembershipService) {}
 
+  @Get('gym/:userId')
+  findGymMemberships(@Param('userId') userId: string) {
+    console.log('Accessing gym memberships for userId:', userId);
+    return this.membershipService.findByUserId(+userId);
+  }
+
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(
     @GetUser('user_id') userId: number,
     @Body() createMembershipDto: CreateMembershipDto
@@ -20,11 +26,13 @@ export class MembershipController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   findAll() {
     return this.membershipService.findAll();
   }
 
   @Get('my-memberships')
+  @UseGuards(JwtAuthGuard)
   findMyMemberships(@GetUser('user_id') userId: number) {
     return this.membershipService.findByUserId(userId);
   }

@@ -66,7 +66,9 @@ export class UsersService {
 
   findOne(id: number) {
     return this.prisma.user.findUnique({
-      where: { user_id: id },
+      where: {
+        user_id: id
+      },
       select: {
         user_id: true,
         username: true,
@@ -80,8 +82,8 @@ export class UsersService {
         Health_information: true,
         illness: true,
         created_at: true,
-        updated_at: true,
-      },
+        updated_at: true
+      }
     });
   }
 
@@ -383,5 +385,28 @@ export class UsersService {
       status: 'success',
       data: user,
     };
+  }
+
+  async getGymUsers() {
+    return await this.prisma.user.findMany({
+      where: {
+        role_id: 4
+      },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        email: true,
+        phoneNum: true,
+        role_id: true,
+        Status_id: true,
+        imgUrl: true,
+        introduction: true,
+        Health_information: true,
+        illness: true,
+        created_at: true,
+        updated_at: true
+      }
+    });
   }
 } 

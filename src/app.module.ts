@@ -11,6 +11,8 @@ import { StepModule } from './step/step.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { MembershipModule } from './membership/membership.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { ScheduleModule } from './schedule/schedule.module';
       dest: './uploads',
     }),
     ScheduleModule,
+    MembershipModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

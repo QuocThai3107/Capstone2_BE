@@ -15,37 +15,26 @@ export class PaymentService {
     endpoint: process.env.ZALOPAY_ENDPOINT,
   };
 
-  async createPayment(createPaymentDto: CreatePaymentDto) {
+  async create(createPaymentDto: CreatePaymentDto) {
     try {
-      // Tạo order_id ngẫu nhiên
-      const orderId = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-      
-      // Tạo payment với trạng thái pending
+      console.log('CreatePaymentDto:', createPaymentDto);
+
+      if (!createPaymentDto.amount_paid || !createPaymentDto.user_id || !createPaymentDto.membership_id) {
+        throw new Error('Missing required fields');
+      }
+
       const payment = await this.prisma.payment.create({
         data: {
-          ...createPaymentDto,
-          order_id: orderId,
-          status_id: 2, // Pending
-          payment_method: 'zalopay'
-        },
+          amount_paid: createPaymentDto.amount_paid,
+          user_id: createPaymentDto.user_id,
+          membership_id: createPaymentDto.membership_id,
+          status_id: 1
+        }
       });
-
-      // Tạo đơn hàng ZaloPay
-      const zaloPayOrder = await this.createZaloPayOrder({
-        amount: Number(payment.amount_paid),
-        orderId: payment.order_id,
-        description: `Thanh toán membership #${payment.membership_id}`,
-      });
-
-      return {
-        payment,
-        zaloPayOrder
-      };
+      return payment;
     } catch (error) {
-      throw new HttpException(
-        'Không thể tạo thanh toán',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      console.error('Payment creation error:', error);
+      throw new Error('Không thể tạo thanh toán: ' + error.message);
     }
   }
 
