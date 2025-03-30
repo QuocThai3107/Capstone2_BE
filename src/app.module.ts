@@ -13,9 +13,13 @@ import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { MembershipModule } from './membership/membership.module';
 import { PaymentModule } from './payment/payment.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     PrismaModule,
     UsersModule,
     PlansModule,
