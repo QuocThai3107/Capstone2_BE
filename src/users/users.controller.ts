@@ -17,9 +17,9 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @Get('gym')
+  async getGymUsers() {
+    return this.usersService.getGymUsers();
   }
 
   @Get('public/:id')

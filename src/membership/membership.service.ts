@@ -143,25 +143,10 @@ export class MembershipService {
 
   // Thêm method để lấy membership theo user_id
   async findByUserId(userId: number) {
-    try {
-      const memberships = await this.prisma.membership.findMany({
-        where: { user_id: userId },
-        include: {
-          user: {
-            select: {
-              username: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      return {
-        status: 'success',
-        data: memberships,
-      };
-    } catch (error) {
-      throw error;
-    }
+    return await this.prisma.membership.findMany({
+      where: {
+        user_id: userId
+      }
+    });
   }
 } 

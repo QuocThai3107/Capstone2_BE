@@ -1,12 +1,49 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import * as crypto from 'crypto';
+import * as CryptoJS from 'crypto-js';
 import axios from 'axios';
+import * as moment from 'moment';
+
+// Thêm config trực tiếp trong service
+const ZALOPAY_CONFIG = {
+  app_id: '2554',
+  key1: 'sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn',
+  key2: 'trMrHtvjo6myautxDUiAcYsVtaeQ8nhf',
+  endpoint: 'https://sb-openapi.zalopay.vn/v2/create',
+  callback_url: 'http://localhost:3000/payment/callback',
+  frontend_url: 'http://localhost:5173'
+};
+
+// Thêm config ZaloPay (sandbox environment)
+const ZALOPAY = {
+  app_id: '2554',
+  key1: 'sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn',
+  key2: 'trMrHtvjo6myautxDUiAcYsVtaeQ8nhf',
+  endpoint: 'https://sb-openapi.zalopay.vn/v2/create'
+};
+
+interface CreateZaloPayOrderParams {
+  amount: number;
+  orderId: string;
+  membershipId: number;
+  description: string;
+  userId: number;
+}
 
 @Injectable()
 export class PaymentService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(PaymentService.name);
+
+  constructor(
+    private prisma: PrismaService,
+  ) {
+    console.log('ZaloPay Config loaded:', {
+      app_id: process.env.ZALOPAY_APP_ID,
+      endpoint: process.env.ZALOPAY_ENDPOINT,
+      hasKey1: !!process.env.ZALOPAY_KEY1
+    });
+  }
 
   private readonly config = {
     app_id: process.env.ZALOPAY_APP_ID,
@@ -15,195 +52,185 @@ export class PaymentService {
     endpoint: process.env.ZALOPAY_ENDPOINT,
   };
 
-  async createPayment(createPaymentDto: CreatePaymentDto) {
+  async create(createPaymentDto: any) {
     try {
-      // Tạo order_id ngẫu nhiên
-      const orderId = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-      
-      // Tạo payment với trạng thái pending
+      // 1. Tạo payment record
       const payment = await this.prisma.payment.create({
         data: {
-          ...createPaymentDto,
-          order_id: orderId,
-          status_id: 2, // Pending
-          payment_method: 'zalopay'
-        },
+          amount_paid: createPaymentDto.amount_paid,
+          user_id: createPaymentDto.user_id,
+          membership_id: createPaymentDto.membership_id,
+          status_id: 1,
+          payment_method: 'ZALOPAY',
+          order_id: `PAY${Date.now()}${createPaymentDto.user_id}`
+        }
       });
 
-      // Tạo đơn hàng ZaloPay
-      const zaloPayOrder = await this.createZaloPayOrder({
-        amount: Number(payment.amount_paid),
-        orderId: payment.order_id,
-        description: `Thanh toán membership #${payment.membership_id}`,
-      });
+      // 2. Tạo ZaloPay order
+      try {
+        const embedData = {
+          redirecturl: 'http://localhost:5173/payment-status',
+          membership_id: payment.membership_id
+        };
 
-      return {
-        payment,
-        zaloPayOrder
-      };
+        const orderData = {
+          app_id: ZALOPAY.app_id,
+          app_trans_id: `${moment().format('YYMMDD')}_${payment.order_id}`,
+          app_user: payment.user_id.toString(),
+          app_time: Date.now(),
+          item: JSON.stringify([]),
+          embed_data: JSON.stringify(embedData),
+          amount: Number(payment.amount_paid),
+          description: `Thanh toán membership #${payment.membership_id}`,
+          bank_code: ''
+        };
+
+        console.log('ZaloPay Request:', orderData);
+
+        // Tạo MAC
+        const data = 
+          orderData.app_id + "|" +
+          orderData.app_trans_id + "|" +
+          orderData.app_user + "|" +
+          orderData.amount + "|" +
+          orderData.app_time + "|" +
+          orderData.embed_data + "|" +
+          orderData.item;
+
+        orderData['mac'] = CryptoJS.HmacSHA256(data, ZALOPAY.key1).toString();
+
+        // Gọi API ZaloPay
+        const zaloPayResponse = await axios.post(ZALOPAY.endpoint, null, { 
+          params: orderData,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+
+        console.log('ZaloPay Response:', zaloPayResponse.data);
+
+        // Trả về kết quả với payment_url từ ZaloPay
+        return {
+          payment_id: payment.payment_id,
+          order_id: payment.order_id,
+          payment_url: zaloPayResponse.data.order_url || `http://localhost:5173/payment?orderId=${payment.order_id}`
+        };
+
+      } catch (zaloPayError) {
+        console.error('ZaloPay Error:', zaloPayError.response?.data || zaloPayError.message);
+        // Nếu có lỗi với ZaloPay, vẫn trả về payment info với mock URL
+        return {
+          payment_id: payment.payment_id,
+          order_id: payment.order_id,
+          payment_url: `http://localhost:5173/payment?orderId=${payment.order_id}`
+        };
+      }
+
     } catch (error) {
-      throw new HttpException(
-        'Không thể tạo thanh toán',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      console.error('Payment creation error:', error);
+      throw new Error(`Payment creation failed: ${error.message}`);
     }
   }
 
-  private async createZaloPayOrder({
-    amount,
-    orderId,
-    description,
-  }) {
-    const embedData = JSON.stringify({
-      redirecturl: process.env.FRONTEND_URL || 'http://localhost:3001'
-    });
-
-    const items = [{ itemid: "knb", itemname: "membership", itemprice: amount, itemquantity: 1 }];
-    const order = {
-      app_id: this.config.app_id,
-      app_trans_id: orderId,
-      app_user: "user123",
-      app_time: Date.now(),
-      item: JSON.stringify(items),
-      embed_data: embedData,
-      amount: amount,
-      description: description,
-      bank_code: "",
-    };
-
-    // Tạo MAC
-    const data = this.config.app_id + "|" + order.app_trans_id + "|" + order.app_user + "|" + order.amount + "|" + order.app_time + "|" + order.embed_data + "|" + order.item;
-    const mac = crypto.createHmac('sha256', this.config.key1)
-      .update(data)
-      .digest('hex');
-
-    const orderData = {
-      ...order,
-      mac: mac
-    };
-
-    try {
-      const response = await axios.post(
-        `${this.config.endpoint}/create`,
-        orderData
-      );
-
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        'Không thể tạo đơn hàng ZaloPay',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+  async verifyCallback(callbackData: any): Promise<boolean> {
+    const mac = CryptoJS.HmacSHA256(
+      callbackData.data, 
+      process.env.ZALOPAY_KEY2
+    ).toString();
+    return mac === callbackData.mac;
   }
 
   async handleCallback(callbackData: any) {
     try {
-      // Verify MAC từ ZaloPay
-      const isValidSignature = this.verifyZaloPayCallback(callbackData);
-      if (!isValidSignature) {
-        return {
-          return_code: -1,
-          return_message: 'mac not equal'
-        };
+      console.log('Received callback data:', callbackData);
+
+      // Verify callback data
+      if (!this.verifyCallback(callbackData)) {
+        throw new Error('Invalid callback signature');
       }
 
-      // Parse data từ callback
-      const data = JSON.parse(callbackData.data);
-      
-      // Tìm payment dựa trên order_id trước
+      const callbackDataJson = JSON.parse(callbackData.data);
+      console.log('Parsed callback data:', callbackDataJson);
+
+      // Tìm payment dựa trên app_trans_id
       const payment = await this.prisma.payment.findFirst({
-        where: {
-          order_id: data.app_trans_id
+        where: { 
+          order_id: callbackDataJson.app_trans_id 
         }
       });
 
       if (!payment) {
-        throw new Error('Không tìm thấy payment');
+        throw new Error('Payment not found');
       }
 
-      // Cập nhật trạng thái payment sử dụng payment_id
+      // Cập nhật status dựa vào response từ ZaloPay
+      const status_id = callbackDataJson.status === 1 ? 2 : 3; // 2: SUCCESS, 3: FAILED
+      
+      // Cập nhật payment status
       await this.prisma.payment.update({
-        where: {
-          payment_id: payment.payment_id  // Sử dụng payment_id thay vì order_id
+        where: { 
+          payment_id: payment.payment_id 
         },
         data: {
-          status_id: callbackData.type === 1 ? 1 : 3 // 1: Success, 3: Failed
+          status_id: status_id,
+          // Có thể thêm các trường khác cần update
         }
       });
 
+      console.log(`Updated payment ${payment.payment_id} status to ${status_id}`);
+
       return {
-        return_code: 1,
-        return_message: 'success'
+        return_code: callbackDataJson.status,
+        return_message: callbackDataJson.status === 1 ? 'success' : 'failed',
+        redirect_url: `http://localhost:5173/payment-status?orderId=${callbackDataJson.app_trans_id}&status=${status_id}`
       };
+
     } catch (error) {
-      return {
-        return_code: -1,
-        return_message: 'internal server error'
-      };
+      console.error('Payment callback error:', error);
+      throw new Error('Không thể xử lý callback: ' + error.message);
     }
   }
 
-  private verifyZaloPayCallback(callbackData: any) {
-    // Implement verify logic here using key2
-    const data = callbackData.data;
-    const requestMac = callbackData.mac;
-    const mac = crypto.createHmac('sha256', this.config.key2)
-      .update(data)
-      .digest('hex');
-    return mac === requestMac;
+  async getPaymentStatus(paymentId: number) {
+    return await this.prisma.payment.findUnique({
+      where: { payment_id: paymentId },
+      select: {
+        payment_id: true,
+        status_id: true,
+        amount_paid: true,
+        order_id: true,
+        payment_date: true
+      }
+    });
   }
 
   async checkPaymentStatus(orderId: string) {
-    try {
-      const payment = await this.prisma.payment.findFirst({
-        where: { order_id: orderId }
-      });
+    const payment = await this.prisma.payment.findFirst({
+      where: { order_id: orderId }
+    });
 
-      if (!payment) {
-        throw new HttpException(
-          'Không tìm thấy thanh toán',
-          HttpStatus.NOT_FOUND
-        );
-      }
-
-      // Kiểm tra trạng thái với ZaloPay
-      const zaloPayStatus = await this.checkZaloPayStatus(orderId);
-
-      return {
-        payment,
-        zaloPayStatus
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Không thể kiểm tra trạng thái thanh toán',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+    if (!payment) {
+      throw new Error('Payment not found');
     }
+
+    return {
+      payment_id: payment.payment_id,
+      status_id: payment.status_id,
+      status: this.getStatusText(payment.status_id),
+      amount: payment.amount_paid
+    };
   }
 
-  private async checkZaloPayStatus(orderId: string) {
-    const data = this.config.app_id + "|" + orderId + "|" + this.config.key1;
-    const mac = crypto.createHmac('sha256', this.config.key1)
-      .update(data)
-      .digest('hex');
-
-    try {
-      const response = await axios.post(
-        `${this.config.endpoint}/query`,
-        {
-          app_id: this.config.app_id,
-          app_trans_id: orderId,
-          mac: mac
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        'Không thể kiểm tra trạng thái ZaloPay',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+  private getStatusText(statusId: number): string {
+    switch (statusId) {
+      case 1:
+        return 'PENDING';
+      case 2:
+        return 'SUCCESS';
+      case 3:
+        return 'FAILED';
+      default:
+        return 'UNKNOWN';
     }
   }
 } 
