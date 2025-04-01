@@ -204,9 +204,12 @@ export class PaymentService {
     });
   }
 
-  async checkPaymentStatus(orderId: string) {
+  async checkPaymentStatus(orderId: string, userId: number) {
     const payment = await this.prisma.payment.findFirst({
-      where: { order_id: orderId }
+      where: { 
+        order_id: orderId,
+        user_id: userId  // Chỉ cho phép user xem payment của chính họ
+      }
     });
 
     if (!payment) {
