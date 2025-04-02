@@ -1,43 +1,15 @@
-import { Type } from 'class-transformer';
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, IsNumberString } from 'class-validator';
-
 export class CreateExercisePostDto {
-  @IsNumberString()
-  user_id: number | string;
-
-  @IsString()
+  user_id: number;
   name: string;
-
-  @IsString()
   description: string;
-
-  @IsOptional()
-  @IsString()
   imgUrl?: string;
-
-  @IsOptional()
-  @IsString()
-  video_rul?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateStepDto)
+  videoUrl?: string;
   steps?: CreateStepDto[];
-
-  @IsOptional()
-  @IsArray()
-  tagIds?: number[] | string | string[];
+  tagIds?: number[];
 }
 
 export class CreateStepDto {
-  @IsNumberString()
-  stepNumber: string | number;
-
-  @IsString()
+  stepNumber: string;
   instruction: string;
-
-  @IsOptional()
-  @IsString()
   imgUrl?: string;
 } 

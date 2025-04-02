@@ -9,7 +9,7 @@ export class PlanSlotsService {
 
   async create(createPlanSlotDto: CreatePlanSlotDto) {
     try {
-      const { plan_id, no, note, duration, exercisePostId } = createPlanSlotDto;
+      const { plan_id, no, note, duration } = createPlanSlotDto;
 
       const lastPlanSlot = await this.prisma.planSlot.findFirst({
         where: {
@@ -26,7 +26,6 @@ export class PlanSlotsService {
           no,
           note,
           duration,
-          exercisePostId,
         },
       });
     } catch (error) {
@@ -34,32 +33,17 @@ export class PlanSlotsService {
     }
   }
 
-  async findAll(plan_id?: number) {
+  async findAll(plan_id: number) {
     try {
-      // Nếu không có plan_id, trả về tất cả plan slots
-      if (plan_id === undefined || plan_id === null) {
-        return await this.prisma.planSlot.findMany({
-          orderBy: { no: 'asc' },
-          include: {
-            plan: true,
-            exercisepost: true
-          }
-        });
-      }
-      
-      // Chuyển đổi plan_id thành số nguyên
-      const planIdNumber = Number(plan_id);
-      
       return await this.prisma.planSlot.findMany({
         where: {
-          planId: planIdNumber
+          planId: plan_id,
         },
         orderBy: {
           no: 'asc'
         },
         include: {
-          plan: true,
-          exercisepost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -76,8 +60,7 @@ export class PlanSlotsService {
           no: no,
         },
         include: {
-          plan: true,
-          exercisepost: true
+          plan: true
         }
       });
     } catch (error) {
@@ -88,7 +71,7 @@ export class PlanSlotsService {
 
   async update(plan_id: number, no: string, updateData: UpdatePlanSlotDto) {
     try {
-      const { note, duration, exercisePostId } = updateData;
+      const { note, duration } = updateData;
 
       return await this.prisma.planSlot.updateMany({
         where: {
@@ -98,7 +81,6 @@ export class PlanSlotsService {
         data: {
           note,
           duration,
-          exercisePostId,
         },
       });
     } catch (error) {
@@ -119,4 +101,4 @@ export class PlanSlotsService {
       throw error;
     }
   }
-}
+} 

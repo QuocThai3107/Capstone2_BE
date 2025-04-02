@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Request, Get, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request, Get, UseInterceptors, UploadedFiles, Param, Patch, BadRequestException } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -6,10 +6,17 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CreateUserDto } from '../users/dto';
 import { GetUser, Public } from './decorator';
 import { CreatePTDto } from './dto/create-pt.dto';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { ApprovePTDto } from './dto/approve-pt.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService
+  ) {}
 
   @Public()
   @Post('register')
@@ -55,11 +62,61 @@ export class AuthController {
 
   @Public()
   @Post('register-pt')
-  @UseInterceptors(FilesInterceptor('certificates', 10)) // Cho phép upload tối đa 10 ảnh
+  @UseInterceptors(FilesInterceptor('certificates', 5))
   async registerPT(
     @Body() createPTDto: CreatePTDto,
-    @UploadedFiles() certificates: Array<Express.Multer.File>
+    @UploadedFiles() files: Express.Multer.File[]
   ) {
-    return this.authService.registerPT(createPTDto, certificates);
+    return this.authService.registerPT(createPTDto, files);
+  }
+
+  @Patch('approve-pt')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(1, 4) // Admin hoặc Gym Owner
+  async approvePT(
+    @Body() approvePTDto: ApprovePTDto,
+    @GetUser('user_id') approverId: number
+  ) {
+    return this.authService.approvePT(approvePTDto, approverId);
+  }
+
+  @Get('pending-pts')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(1, 4) // Admin hoặc Gym Owner
+  async getPendingPTs(@GetUser() user: any) {
+    const where: any = {
+      role_id: 3, // PT role
+      Status_id: 1 // Pending status
+    };
+
+    // Nếu là gym owner, chỉ lấy các PT đăng ký vào gym của họ
+    if (user.role_id === 4) {
+      where.gym = user.username;
+    }
+
+    const pendingPTs = await this.prisma.user.findMany({
+      where,
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        email: true,
+        phoneNum: true,
+        gym: true,
+        Status_id: true,
+        certificate: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    return pendingPTs;
+  }
+
+  @Public()
+  @Get('gyms')
+  async getGyms() {
+    return this.authService.getGyms();
   }
 } 

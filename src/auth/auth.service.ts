@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto';
 import * as bcrypt from 'bcrypt';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreatePTDto } from './dto/create-pt.dto';
+import { ApprovePTDto } from './dto/approve-pt.dto';
 
 @Injectable()
 export class AuthService {
@@ -165,115 +166,173 @@ export class AuthService {
   }
 
   async getTokens(userId: number, username: string) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          username,
-        },
-        {
-          secret: process.env.JWT_SECRET_KEY,
-          expiresIn: '15m',
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          username,
-        },
-        {
-          secret: process.env.JWT_REFRESH_SECRET_KEY,
-          expiresIn: '7d',
-        },
-      ),
-    ]);
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: userId,
+        username,
+      },
+      {
+        secret: process.env.JWT_SECRET_KEY,
+        expiresIn: '15m',
+      },
+    );
 
     return {
       accessToken,
-      refreshToken,
     };
   }
 
-  async updateRefreshToken(userId: number, refreshToken: string) {
-    await this.prisma.user.update({
-      where: {
-        user_id: userId,
-      },
-      data: {
-        // Không lưu refreshToken trong database vì không có trường tương ứng
-        // Có thể sử dụng giải pháp khác như Redis
-      }
-    });
-  }
-
-  async registerPT(createPTDto: CreatePTDto, certificates: Array<Express.Multer.File>) {
+  async registerPT(createPTDto: CreatePTDto, files: Express.Multer.File[]) {
     // Kiểm tra username đã tồn tại chưa
     const existingUser = await this.prisma.user.findFirst({
-      where: { username: createPTDto.username }
+      where: {
+        username: createPTDto.username,
+      },
     });
 
     if (existingUser) {
-      throw new BadRequestException('Username đã tồn tại');
+      throw new ConflictException('Username đã tồn tại');
     }
 
-    // Kiểm tra role_id
-    if (createPTDto.role_id !== 3) {
-      throw new BadRequestException('role_id phải là 3 cho PT');
-    }
-
-    let uploadResults = [];
-    try {
-      // Upload tất cả certificates lên Cloudinary
-      uploadResults = await Promise.all(
-        certificates.map(file => this.cloudinary.uploadImage(file))
-      );
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(createPTDto.password, 10);
-
-      // Tạo user và certificates trong cùng một transaction
-      const result = await this.prisma.$transaction(async (prisma) => {
-        // Tạo user mới với role_id = 3
-        const newUser = await prisma.user.create({
-          data: {
-            username: createPTDto.username,
-            password: hashedPassword,
-            role_id: 3, // Đảm bảo role_id là 3
-            gym: createPTDto.gym,
-          },
-        });
-
-        // Tạo các certificate
-        // await prisma.certificate.createMany({
-        //   data: createPTDto.certificates.map((cert) => ({
-        //     user_id: user.user_id,
-        //     ...cert,
-        //   })),
-        // });
-
-        return newUser;
+    // Kiểm tra gym nếu có
+    if (createPTDto.gym) {
+      const gym = await this.prisma.user.findFirst({
+        where: {
+          username: createPTDto.gym,
+          role_id: 4 // Gym owner role
+        },
       });
 
-      // Tạo tokens
-      const tokens = await this.getTokens(result.user_id, result.username);
-      await this.updateRefreshToken(result.user_id, tokens.refreshToken);
+      if (!gym) {
+        throw new BadRequestException('Gym không tồn tại');
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(createPTDto.password, 10);
+
+    // Upload certificates to Cloudinary
+    const certificateUrls = await Promise.all(
+      files.map(async (file) => {
+        const result = await this.cloudinary.uploadImage(file);
+        return result.url;
+      })
+    );
+
+    // Tạo user mới
+    const newUser = await this.prisma.user.create({
+      data: {
+        username: createPTDto.username,
+        password: hashedPassword,
+        email: createPTDto.email,
+        phoneNum: createPTDto.phoneNum,
+        name: createPTDto.name,
+        role_id: createPTDto.role_id,
+        Status_id: createPTDto.Status_id,
+        gym: createPTDto.gym,
+        certificate: {
+          create: certificateUrls.map(url => ({
+            imgurl: url
+          }))
+        }
+      },
+      include: {
+        certificate: true
+      }
+    });
+
+    // Tạo token
+    const payload = { 
+      user_id: newUser.user_id, 
+      username: newUser.username,
+      role_id: newUser.role_id 
+    };
+
+    return {
+      message: 'Đăng ký thành công',
+      access_token: this.jwtService.sign(payload),
+      user: newUser
+    };
+  }
+
+  async approvePT(approvePTDto: ApprovePTDto, approverId: number) {
+    try {
+      // Kiểm tra người duyệt có quyền không
+      const approver = await this.prisma.user.findUnique({
+        where: { user_id: approverId },
+        select: { role_id: true, username: true }
+      });
+
+      if (!approver) {
+        throw new ForbiddenException('Không tìm thấy thông tin người duyệt');
+      }
+
+      // Kiểm tra PT cần duyệt
+      const pt = await this.prisma.user.findUnique({
+        where: { user_id: approvePTDto.user_id },
+        select: { 
+          role_id: true, 
+          Status_id: true,
+          gym: true
+        }
+      });
+
+      if (!pt) {
+        throw new BadRequestException('PT không tồn tại');
+      }
+
+      if (pt.role_id !== 3) {
+        throw new BadRequestException('User này không phải là PT');
+      }
+
+      // Kiểm tra quyền duyệt
+      if (approver.role_id === 4) { // Nếu là gym owner
+        if (!pt.gym || pt.gym !== approver.username) {
+          throw new ForbiddenException('Bạn không có quyền duyệt PT này');
+        }
+      } else if (approver.role_id !== 1) { // Nếu không phải admin
+        throw new ForbiddenException('Bạn không có quyền duyệt PT');
+      }
+
+      // Cập nhật trạng thái của PT
+      const updatedPT = await this.prisma.user.update({
+        where: { user_id: approvePTDto.user_id },
+        data: {
+          Status_id: approvePTDto.Status_id,
+        },
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          Status_id: true,
+          role_id: true,
+          gym: true,
+          certificate: true
+        }
+      });
 
       return {
-        message: 'Đăng ký PT thành công',
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
+        message: approvePTDto.Status_id === 2 ? 'Duyệt PT thành công' : 'Từ chối PT thành công',
+        data: updatedPT
       };
-
     } catch (error) {
-      // Nếu có lỗi, xóa các ảnh đã upload trên Cloudinary
-      if (uploadResults.length > 0) {
-        await Promise.all(
-          uploadResults.map(result => 
-            this.cloudinary.deleteImage(result.public_id)
-          )
-        );
-      }
+      console.error('Approve PT error:', error);
       throw error;
     }
+  }
+
+  async getGyms() {
+    const gyms = await this.prisma.user.findMany({
+      where: {
+        role_id: 4 // Gym owner role
+      },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        Status_id: true // Thêm Status_id để FE biết trạng thái duyệt
+      }
+    });
+    return gyms;
   }
 } 

@@ -31,7 +31,6 @@ export class PlansService {
               no: slot.no,
               note: slot.note,
               duration: slot.duration,
-              exercisePostId: slot.exercisePostId || null,
             },
           });
         }
@@ -76,9 +75,6 @@ export class PlansService {
         include: {
           user: true,
           planSlots: {
-            include: {
-              exercisepost: true
-            },
             orderBy: {
               no: 'asc'
             }
@@ -107,9 +103,6 @@ export class PlansService {
         include: {
           user: true,
           planSlots: {
-            include: {
-              exercisepost: true,
-            },
             orderBy: {
               no: 'asc',
             },

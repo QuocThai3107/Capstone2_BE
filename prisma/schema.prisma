@@ -8,14 +8,11 @@ datasource db {
 }
 
 model PlanSlot {
-  planId         Int           @map("plan_id")
-  no             String        @db.VarChar(2)
-  note           String?       @db.VarChar(50)
-  id             Int?          @map("_id")
-  duration       Int?
-  exercisePostId Int?          @map("exercisepost_id")
-  plan           plan          @relation(fields: [planId], references: [plan_id], onDelete: Cascade, map: "PlanSlot_plan_id_fkey")
-  exercisepost   exercisepost? @relation(fields: [exercisePostId], references: [exercisepost_id], onDelete: SetNull)
+  planId   Int     @map("plan_id")
+  no       String  @db.VarChar(2)
+  note     String? @db.VarChar(50)
+  duration Int?
+  plan     plan    @relation(fields: [planId], references: [plan_id], onDelete: Cascade, map: "PlanSlot_plan_id_fkey")
 
   @@id([planId, no])
   @@map("planslot")
@@ -47,7 +44,6 @@ model exercisepost {
   user            user              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "exercisepost_ibfk_1")
   exerciseposttag exerciseposttag[]
   step            step[]
-  planslots       PlanSlot[]
 
   @@index([user_id], map: "user_id")
 }
@@ -179,12 +175,11 @@ model user {
   schedule                   schedule[]
 }
 
-/// Model certificate cần có unique identifier để được xử lý bởi Prisma Client
 model certificate {
-  id      Int    @id @default(autoincrement())
   user_id Int
-  imgurl  String @db.Text
+  imgurl  String @db.VarChar(255)
   user    user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "certificate_ibfk_1")
 
+  @@id([user_id, imgurl])
   @@index([user_id], map: "user_id")
 }
