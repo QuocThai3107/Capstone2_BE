@@ -8,11 +8,14 @@ datasource db {
 }
 
 model PlanSlot {
-  planId   Int     @map("plan_id")
-  no       String  @db.VarChar(2)
-  note     String? @db.VarChar(50)
-  duration Int?
-  plan     plan    @relation(fields: [planId], references: [plan_id], onDelete: Cascade, map: "PlanSlot_plan_id_fkey")
+  planId         Int           @map("plan_id")
+  no             String        @db.VarChar(2)
+  note           String?       @db.VarChar(50)
+  id             Int?          @map("_id")
+  duration       Int?
+  exercisePostId Int?          @map("exercisepost_id")
+  plan           plan          @relation(fields: [planId], references: [plan_id], onDelete: Cascade, map: "PlanSlot_plan_id_fkey")
+  exercisepost   exercisepost? @relation(fields: [exercisePostId], references: [exercisepost_id], onDelete: SetNull)
 
   @@id([planId, no])
   @@map("planslot")
@@ -44,6 +47,7 @@ model exercisepost {
   user            user              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "exercisepost_ibfk_1")
   exerciseposttag exerciseposttag[]
   step            step[]
+  planslots       PlanSlot[]
 
   @@index([user_id], map: "user_id")
 }
@@ -120,11 +124,11 @@ model schedule {
   schedule_id Int       @id @default(autoincrement())
   user_id     Int
   note        String?   @db.VarChar(50)
-  plan_id     Int
-  day         String?   @db.VarChar(20)
+  plan_id     Int?
+  day         DateTime
   start_hour  DateTime? @db.Time(0)
   end_hour    DateTime? @db.Time(0)
-  plan        plan      @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade, map: "Schedule_plan_id_fkey")
+  plan        plan?     @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade, map: "Schedule_plan_id_fkey")
   user        user      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "Schedule_user_id_fkey")
 
   @@index([plan_id], map: "Schedule_plan_id_fkey")
@@ -164,7 +168,6 @@ model user {
   Health_information         String?        @db.Text
   illness                    String?        @db.Text
   gym                        String?        @db.VarChar(50)
-  refresh_token              String?        @db.Text
   certificate                certificate[]
   chat_chat_to_user_idTouser chat[]         @relation("chat_to_user_idTouser")
   chat_chat_user_idTouser    chat[]         @relation("chat_user_idTouser")
@@ -176,11 +179,12 @@ model user {
   schedule                   schedule[]
 }
 
+/// Model certificate cần có unique identifier để được xử lý bởi Prisma Client
 model certificate {
+  id      Int    @id @default(autoincrement())
   user_id Int
-  imgurl  String @db.VarChar(255)
+  imgurl  String @db.Text
   user    user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "certificate_ibfk_1")
 
-  @@id([user_id, imgurl])
   @@index([user_id], map: "user_id")
 }

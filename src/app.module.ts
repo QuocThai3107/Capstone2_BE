@@ -10,6 +10,8 @@ import { ExercisePostTagModule } from './exercise-post-tag/exercise-post-tag.mod
 import { StepModule } from './step/step.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ScheduleModule } from './schedule/schedule.module';
 import { MembershipModule } from './membership/membership.module';
 import { PaymentModule } from './payment/payment.module';
@@ -36,6 +38,12 @@ import { ConfigModule } from '@nestjs/config';
     PaymentModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

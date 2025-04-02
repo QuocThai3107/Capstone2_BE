@@ -1,9 +1,9 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePlanSlotDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  plan_id: number;
+  plan_id?: number;
 
   @IsNotEmpty()
   @IsString()
@@ -16,4 +16,8 @@ export class CreatePlanSlotDto {
   @IsOptional()
   @IsNumber()
   duration?: number;
+  
+  @IsOptional()
+  @IsNumber()
+  exercisePostId?: number;
 } 
