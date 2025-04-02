@@ -124,11 +124,11 @@ model schedule {
   schedule_id Int       @id @default(autoincrement())
   user_id     Int
   note        String?   @db.VarChar(50)
-  plan_id     Int
-  day         String?   @db.VarChar(20)
+  plan_id     Int?
+  day         DateTime
   start_hour  DateTime? @db.Time(0)
   end_hour    DateTime? @db.Time(0)
-  plan        plan      @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade, map: "Schedule_plan_id_fkey")
+  plan        plan?     @relation(fields: [plan_id], references: [plan_id], onDelete: Cascade, map: "Schedule_plan_id_fkey")
   user        user      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "Schedule_user_id_fkey")
 
   @@index([plan_id], map: "Schedule_plan_id_fkey")
