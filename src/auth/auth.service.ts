@@ -191,11 +191,6 @@ export class AuthService {
       throw new BadRequestException('Username đã tồn tại');
     }
 
-    // Kiểm tra role_id
-    if (createPTDto.role_id !== 3) {
-      throw new BadRequestException('role_id phải là 3 cho PT');
-    }
-
     let uploadResults = [];
     try {
       // Upload tất cả certificates lên Cloudinary
@@ -208,12 +203,13 @@ export class AuthService {
 
       // Tạo user và certificates trong cùng một transaction
       const result = await this.prisma.$transaction(async (prisma) => {
-        // Tạo user mới với role_id = 3
+        // Tạo user mới với role_id = 4
         const newUser = await prisma.user.create({
           data: {
             username: createPTDto.username,
             password: hashedPassword,
-            role_id: 3, // Đảm bảo role_id là 3
+            role_id: 4, // Luôn set role_id = 4 cho PT
+            Status_id: 1,
             gym: createPTDto.gym,
           },
         });

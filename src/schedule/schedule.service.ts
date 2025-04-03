@@ -10,18 +10,10 @@ export class ScheduleService {
   async create(createScheduleDto: CreateScheduleDto) {
     return await this.prisma.schedule.create({
       data: {
-        user: {
-          connect: {
-            user_id: createScheduleDto.user_id
-          }
-        },
-        plan: createScheduleDto.plan_id ? {
-          connect: {
-            plan_id: createScheduleDto.plan_id
-          }
-        } : undefined,
+        user_id: createScheduleDto.user_id,
+        plan_id: createScheduleDto.plan_id || null,
         note: createScheduleDto.note,
-        day: new Date(createScheduleDto.day),
+        day: new Date(createScheduleDto.day), // Chuyển đổi sang DateTime
         start_hour: createScheduleDto.start_hour ? new Date(createScheduleDto.start_hour) : null,
         end_hour: createScheduleDto.end_hour ? new Date(createScheduleDto.end_hour) : null,
       },
@@ -118,5 +110,16 @@ export class ScheduleService {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+  async findByUserId(userId: number) {
+    return await this.prisma.schedule.findMany({
+      where: {
+        user_id: userId
+      },
+      orderBy: {
+        day: 'asc'
+      }
+    });
   }
 } 
