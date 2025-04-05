@@ -6,7 +6,7 @@ import axios from 'axios';
 import * as moment from 'moment';
 
 // Cấu hình ngrok URL cho callback
-const NGROK_URL = 'https://2671-117-2-155-20.ngrok-free.app';
+const NGROK_URL = 'https://8f43-14-236-174-148.ngrok-free.app';
 
 // Thêm config ZaloPay với URL ngrok
 const ZALOPAY_CONFIG = {
