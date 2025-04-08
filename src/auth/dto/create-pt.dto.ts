@@ -9,10 +9,6 @@ export class CreatePTDto {
   @IsString()
   password: string;
 
-  @IsNotEmpty()
-  @IsNumber()
-  @Equals(3, { message: 'role_id phải là 3 (PT)' })
-  role_id: number;
 
   @IsNotEmpty()
   @IsString()
