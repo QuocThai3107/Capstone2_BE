@@ -208,7 +208,7 @@ export class AuthService {
           data: {
             username: createPTDto.username,
             password: hashedPassword,
-            role_id: 4, // Luôn set role_id = 4 cho PT
+            role_id: 3, // Luôn set role_id = 4 cho PT
             Status_id: 1,
             gym: createPTDto.gym,
           },
