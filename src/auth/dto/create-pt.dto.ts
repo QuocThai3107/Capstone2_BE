@@ -9,6 +9,7 @@ export class CreatePTDto {
   @IsString()
   password: string;
 
+
   @IsNotEmpty()
   @IsString()
   gym: string;

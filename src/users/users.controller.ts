@@ -21,7 +21,11 @@ export class UsersController {
   async getGymUsers() {
     return this.usersService.getGymUsers();
   }
-
+  @Get('gym/pts')
+  @UseGuards(JwtAuthGuard)
+  async getPTsByGym() {
+    return this.usersService.getPTsByGym();
+  }
   @Get('public/:id')
   async getPublicProfile(@Param('id') id: string) {
     return this.usersService.getPublicProfile(+id);
@@ -72,4 +76,6 @@ export class UsersController {
   async getMyPTProfile(@GetUser('user_id') userId: number) {
     return this.usersService.getPTProfile(userId);
   }
+
+  
 } 

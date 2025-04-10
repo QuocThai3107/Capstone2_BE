@@ -432,4 +432,50 @@ export class UsersService {
       }
     });
   }
+
+  async getPTsByGym() {
+    // Lấy danh sách tên gym từ các Gym Owner (role_id = 4)
+    const gymOwners = await this.prisma.user.findMany({
+      where: {
+        role_id: 4
+      },
+      select: {
+        name: true
+      }
+    });
+
+    const gymNames = gymOwners.map(owner => owner.name);
+
+    // Lấy danh sách PT (role_id = 3, Status_id = 1) thuộc các gym đó
+    const pts = await this.prisma.user.findMany({
+      where: {
+        role_id: 3,
+        Status_id: 1,
+        gym: {
+          in: gymNames
+        }
+      },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        email: true,
+        phoneNum: true,
+        gym: true,
+        Status_id: true,
+        certificate: true
+      }
+    });
+
+    return pts.map(pt => ({
+      id: pt.user_id,
+      username: pt.username,
+      name: pt.name,
+      email: pt.email,
+      phoneNum: pt.phoneNum,
+      gym: pt.gym,
+      Status_id: pt.Status_id,
+      certificate: pt.certificate || []
+    }));
+  }
 } 
