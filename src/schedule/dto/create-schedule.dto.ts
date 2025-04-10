@@ -9,19 +9,19 @@ export class CreateScheduleDto {
   @IsString()
   note?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  plan_id: number;
+  plan_id?: number;
 
   @IsOptional()
   @IsString()
-  day?: string;
+  day: string | Date;
 
   @IsOptional()
   @IsDateString()
-  start_hour?: Date;
+  start_hour?: string | Date;
 
   @IsOptional()
   @IsDateString()
-  end_hour?: Date;
+  end_hour?: string | Date;
 } 

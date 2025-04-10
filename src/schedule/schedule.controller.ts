@@ -12,12 +12,12 @@ export class ScheduleController {
 
   @Post()
   create(
-    @GetUser('user_id') userId: number,
     @Body() createScheduleDto: CreateScheduleDto
   ) {
-    createScheduleDto.user_id = userId;
     return this.scheduleService.create(createScheduleDto);
   }
+
+ d
 
   @Get()
   findAll(@GetUser('user_id') userId: number) {
@@ -41,4 +41,5 @@ export class ScheduleController {
   remove(@Param('id') id: string) {
     return this.scheduleService.remove(+id);
   }
+
 } 

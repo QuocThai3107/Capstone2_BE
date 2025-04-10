@@ -17,7 +17,15 @@ export class AuthController {
     return this.authService.signup(createUserDto);
   }
 
-  @Public()
+  @Post('register-pt')
+  @UseInterceptors(FilesInterceptor('certificates', 10)) // Cho phép upload tối đa 10 ảnh
+  async registerPT(
+    @Body() createPTDto: CreatePTDto,
+    @UploadedFiles() certificates: Array<Express.Multer.File>
+  ) {
+    return this.authService.registerPT(createPTDto, certificates);
+  }
+
   @Post('login')
   async login(@Body() loginDto: { username: string; password: string }) {
     return this.authService.login(loginDto);
@@ -53,13 +61,4 @@ export class AuthController {
     return this.authService.getCurrentUserRole(userId);
   }
 
-  @Public()
-  @Post('register-pt')
-  @UseInterceptors(FilesInterceptor('certificates', 10)) // Cho phép upload tối đa 10 ảnh
-  async registerPT(
-    @Body() createPTDto: CreatePTDto,
-    @UploadedFiles() certificates: Array<Express.Multer.File>
-  ) {
-    return this.authService.registerPT(createPTDto, certificates);
-  }
 } 

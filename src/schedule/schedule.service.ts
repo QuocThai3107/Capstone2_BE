@@ -8,30 +8,16 @@ export class ScheduleService {
   constructor(private prisma: PrismaService) {}
 
   async create(createScheduleDto: CreateScheduleDto) {
-    try {
-      // Kiểm tra plan có tồn tại không
-      const plan = await this.prisma.plan.findUnique({
-        where: { plan_id: createScheduleDto.plan_id }
-      });
-
-      if (!plan) {
-        throw new NotFoundException('Không tìm thấy plan');
-      }
-
-      const schedule = await this.prisma.schedule.create({
-        data: createScheduleDto,
-        include: {
-          plan: true
-        }
-      });
-
-      return {
-        status: 'success',
-        data: schedule
-      };
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    return await this.prisma.schedule.create({
+      data: {
+        user_id: createScheduleDto.user_id,
+        plan_id: createScheduleDto.plan_id || null,
+        note: createScheduleDto.note,
+        day: new Date(createScheduleDto.day), // Chuyển đổi sang DateTime
+        start_hour: createScheduleDto.start_hour ? new Date(createScheduleDto.start_hour) : null,
+        end_hour: createScheduleDto.end_hour ? new Date(createScheduleDto.end_hour) : null,
+      },
+    });
   }
 
   async findAll(userId: number) {
@@ -124,5 +110,16 @@ export class ScheduleService {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+  async findByUserId(userId: number) {
+    return await this.prisma.schedule.findMany({
+      where: {
+        user_id: userId
+      },
+      orderBy: {
+        day: 'asc'
+      }
+    });
   }
 } 

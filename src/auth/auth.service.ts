@@ -165,45 +165,20 @@ export class AuthService {
   }
 
   async getTokens(userId: number, username: string) {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          username,
-        },
-        {
-          secret: process.env.JWT_SECRET_KEY,
-          expiresIn: '15m',
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          username,
-        },
-        {
-          secret: process.env.JWT_REFRESH_SECRET_KEY,
-          expiresIn: '7d',
-        },
-      ),
-    ]);
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: userId,
+        username,
+      },
+      {
+        secret: process.env.JWT_SECRET_KEY,
+        expiresIn: '15m',
+      },
+    );
 
     return {
       accessToken,
-      refreshToken,
     };
-  }
-
-  async updateRefreshToken(userId: number, refreshToken: string) {
-    await this.prisma.user.update({
-      where: {
-        user_id: userId,
-      },
-      data: {
-        // Không lưu refreshToken trong database vì không có trường tương ứng
-        // Có thể sử dụng giải pháp khác như Redis
-      }
-    });
   }
 
   async registerPT(createPTDto: CreatePTDto, certificates: Array<Express.Multer.File>) {
@@ -214,11 +189,6 @@ export class AuthService {
 
     if (existingUser) {
       throw new BadRequestException('Username đã tồn tại');
-    }
-
-    // Kiểm tra role_id
-    if (createPTDto.role_id !== 3) {
-      throw new BadRequestException('role_id phải là 3 cho PT');
     }
 
     let uploadResults = [];
@@ -233,35 +203,34 @@ export class AuthService {
 
       // Tạo user và certificates trong cùng một transaction
       const result = await this.prisma.$transaction(async (prisma) => {
-        // Tạo user mới với role_id = 3
+        // Tạo user mới với role_id = 4
         const newUser = await prisma.user.create({
           data: {
             username: createPTDto.username,
             password: hashedPassword,
-            role_id: 3, // Đảm bảo role_id là 3
+            role_id: 4, // Luôn set role_id = 4 cho PT
+            Status_id: 1,
             gym: createPTDto.gym,
           },
         });
 
         // Tạo các certificate
-        // await prisma.certificate.createMany({
-        //   data: createPTDto.certificates.map((cert) => ({
-        //     user_id: user.user_id,
-        //     ...cert,
-        //   })),
-        // });
+        await prisma.certificate.createMany({
+          data: uploadResults.map(result => ({
+            user_id: newUser.user_id,
+            imgurl: result.url
+          }))
+        });
 
         return newUser;
       });
 
-      // Tạo tokens
+      // Tạo token
       const tokens = await this.getTokens(result.user_id, result.username);
-      await this.updateRefreshToken(result.user_id, tokens.refreshToken);
 
       return {
         message: 'Đăng ký PT thành công',
         access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
       };
 
     } catch (error) {

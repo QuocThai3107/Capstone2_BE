@@ -64,10 +64,10 @@ export class UsersService {
     });
   }
 
-  findOne(id: number) {
-    return this.prisma.user.findUnique({
+  async findOne(id: number) {
+    const users = await this.prisma.user.findMany({
       where: {
-        user_id: id
+        role_id: 3
       },
       select: {
         user_id: true,
@@ -85,6 +85,12 @@ export class UsersService {
         updated_at: true
       }
     });
+
+    if (!users || users.length === 0) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    return users;
   }
 
   findOneWithAll(id: number) {
@@ -276,7 +282,7 @@ export class UsersService {
 
   remove(id: number) {
     return this.prisma.user.delete({
-      where: { user_id: id },
+      where: { user_id: Number(id) },
     });
   }
 
@@ -307,10 +313,10 @@ export class UsersService {
 
   async getPTDetail(id: number) {
     try {
-      const ptDetail = await this.prisma.user.findUnique({
+      const ptDetail = await this.prisma.user.findFirst({
         where: {
-          user_id: id,
-          role_id: 2, // Role PT
+          user_id: Number(id),
+          role_id: 3
         },
         select: {
           user_id: true,
@@ -321,12 +327,6 @@ export class UsersService {
           imgUrl: true,
           introduction: true,
           gym: true,
-          // certificate đã bị đánh dấu @@ignore trong schema.prisma nên không thể sử dụng
-          // certificate: {
-          //   select: {
-          //     imgurl: true
-          //   }
-          // }
         }
       });
 
@@ -377,7 +377,7 @@ export class UsersService {
   async getPTProfile(userId: number) {
     const user = await this.prisma.user.findFirst({
       where: { 
-        user_id: userId,
+        user_id: Number(userId),
         role_id: 3, // Role PT
       },
       select: {
@@ -429,6 +429,21 @@ export class UsersService {
         illness: true,
         created_at: true,
         updated_at: true
+      }
+    });
+  }
+
+  async getAllPTs() {
+    return await this.prisma.user.findMany({
+      where: {
+        role_id: 3
+      },
+      select: {
+        user_id: true,
+        name: true,
+        imgUrl: true,
+        introduction: true,
+        gym: true
       }
     });
   }

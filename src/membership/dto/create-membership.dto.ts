@@ -15,7 +15,7 @@ export class CreateMembershipDto {
 
   @IsNotEmpty()
   @IsNumber()
-  membership_type: number;
+  membership_type: number; // mặc định là 2 (gymmembership)
 
   @IsNotEmpty()
   @IsNumber()

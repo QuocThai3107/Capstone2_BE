@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Logger, UseGuards, Request } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('payment')
 export class PaymentController {
@@ -92,6 +93,36 @@ export class PaymentController {
         throw error;
       }
       throw new HttpException('Không thể kiểm tra trạng thái đơn hàng', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('my-payments/:userId')
+  async getMyPayments(@Param('userId') userId: string) {
+    try {
+      this.logger.log(`Fetching payments for user: ${userId}`);
+      const payments = await this.prisma.payment.findMany({
+        where: {
+          user_id: parseInt(userId)
+        },
+        orderBy: {
+          payment_date: 'desc'
+        }
+      });
+
+      return payments.map(payment => ({
+        ...payment,
+        status: this.getStatusText(payment.status_id),
+        status_description: this.getStatusDescription(payment.status_id)
+      }));
+    } catch (error) {
+      this.logger.error('Error fetching user payments:', error);
+      throw new HttpException(
+        {
+          message: 'Không thể lấy lịch sử thanh toán',
+          error: error.message
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
