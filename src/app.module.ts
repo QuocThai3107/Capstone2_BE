@@ -17,6 +17,8 @@ import { MembershipModule } from './membership/membership.module';
 import { PaymentModule } from './payment/payment.module';
 import { ConfigModule } from '@nestjs/config';
 import { ChatModule } from './chat/chat.module';
+import { HealthAnalysisController } from './health-analysis.controller';
+import { HealthAnalysisModule } from './health-analysis/health-analysis.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,8 +39,9 @@ import { ChatModule } from './chat/chat.module';
     ScheduleModule,
     MembershipModule,
     PaymentModule,
+    HealthAnalysisModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthAnalysisController],
   providers: [
     AppService,
     {
