@@ -167,12 +167,11 @@ export class AuthService {
   async getTokens(userId: number, username: string) {
     const accessToken = await this.jwtService.signAsync(
       {
-        sub: userId,
+        user_id: userId,
         username,
       },
       {
-        secret: process.env.JWT_SECRET_KEY,
-        expiresIn: '15m',
+        expiresIn: '1d',
       },
     );
 
