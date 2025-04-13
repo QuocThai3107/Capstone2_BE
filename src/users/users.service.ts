@@ -64,10 +64,31 @@ export class UsersService {
     });
   }
 
-  async findOne(id: number) {
+  async findAllPTs() {
     const users = await this.prisma.user.findMany({
       where: {
         role_id: 3
+      },
+      select: {
+        user_id: true,
+        name: true,
+        imgUrl: true,
+        introduction: true,
+        gym: true
+      }
+    });
+
+    if (!users || users.length === 0) {
+      throw new NotFoundException('Không tìm thấy PT nào');
+    }
+
+    return users;
+  }
+
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { 
+        user_id: id 
       },
       select: {
         user_id: true,
@@ -86,11 +107,11 @@ export class UsersService {
       }
     });
 
-    if (!users || users.length === 0) {
+    if (!user) {
       throw new NotFoundException('Không tìm thấy người dùng');
     }
 
-    return users;
+    return user;
   }
 
   findOneWithAll(id: number) {
@@ -348,8 +369,14 @@ export class UsersService {
   }
 
   async getProfile(userId: number) {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
     const user = await this.prisma.user.findUnique({
-      where: { user_id: userId },
+      where: { 
+        user_id: userId 
+      },
       select: {
         user_id: true,
         username: true,
@@ -360,8 +387,8 @@ export class UsersService {
         imgUrl: true,
         introduction: true,
         Health_information: true,
-        illness: true,
-      },
+        illness: true
+      }
     });
 
     if (!user) {
@@ -370,7 +397,7 @@ export class UsersService {
 
     return {
       status: 'success',
-      data: user,
+      data: user
     };
   }
 
@@ -446,5 +473,51 @@ export class UsersService {
         gym: true
       }
     });
+  }
+
+  async getPTsByGym() {
+    // Lấy danh sách tên gym từ các Gym Owner (role_id = 4)
+    const gymOwners = await this.prisma.user.findMany({
+      where: {
+        role_id: 4
+      },
+      select: {
+        name: true
+      }
+    });
+
+    const gymNames = gymOwners.map(owner => owner.name);
+
+    // Lấy danh sách PT (role_id = 3, Status_id = 1) thuộc các gym đó
+    const pts = await this.prisma.user.findMany({
+      where: {
+        role_id: 3,
+        Status_id: 1,
+        gym: {
+          in: gymNames
+        }
+      },
+      select: {
+        user_id: true,
+        username: true,
+        name: true,
+        email: true,
+        phoneNum: true,
+        gym: true,
+        Status_id: true,
+        certificate: true
+      }
+    });
+
+    return pts.map(pt => ({
+      id: pt.user_id,
+      username: pt.username,
+      name: pt.name,
+      email: pt.email,
+      phoneNum: pt.phoneNum,
+      gym: pt.gym,
+      Status_id: pt.Status_id,
+      certificate: pt.certificate || []
+    }));
   }
 } 

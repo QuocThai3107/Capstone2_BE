@@ -11,13 +11,14 @@ model PlanSlot {
   planId         Int           @map("plan_id")
   no             String        @db.VarChar(2)
   note           String?       @db.VarChar(50)
-  id             Int?          @map("_id")
   duration       Int?
+  id             Int?          @map("_id")
   exercisePostId Int?          @map("exercisepost_id")
   plan           plan          @relation(fields: [planId], references: [plan_id], onDelete: Cascade, map: "PlanSlot_plan_id_fkey")
-  exercisepost   exercisepost? @relation(fields: [exercisePostId], references: [exercisepost_id], onDelete: SetNull)
+  exercisepost   exercisepost? @relation(fields: [exercisePostId], references: [exercisepost_id])
 
   @@id([planId, no])
+  @@index([exercisePostId], map: "planslot_exercisepost_id_fkey")
   @@map("planslot")
 }
 
@@ -46,8 +47,8 @@ model exercisepost {
   video_rul       String?           @db.Text
   user            user              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "exercisepost_ibfk_1")
   exerciseposttag exerciseposttag[]
-  step            step[]
   planslots       PlanSlot[]
+  step            step[]
 
   @@index([user_id], map: "user_id")
 }
@@ -148,6 +149,7 @@ model step {
 model tag {
   tag_id          Int               @id @default(autoincrement())
   tag_name        String?           @db.VarChar(50)
+  category        String            @default("") @db.VarChar(50)
   exerciseposttag exerciseposttag[]
   recommend       recommend[]
 }
@@ -181,10 +183,10 @@ model user {
 
 /// Model certificate cần có unique identifier để được xử lý bởi Prisma Client
 model certificate {
-  id      Int    @id @default(autoincrement())
   user_id Int
   imgurl  String @db.Text
+  id      Int    @id @default(autoincrement())
   user    user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "certificate_ibfk_1")
 
   @@index([user_id], map: "user_id")
-} 
+}

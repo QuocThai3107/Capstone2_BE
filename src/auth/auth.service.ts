@@ -167,12 +167,11 @@ export class AuthService {
   async getTokens(userId: number, username: string) {
     const accessToken = await this.jwtService.signAsync(
       {
-        sub: userId,
+        user_id: userId,
         username,
       },
       {
-        secret: process.env.JWT_SECRET_KEY,
-        expiresIn: '15m',
+        expiresIn: '1d',
       },
     );
 
@@ -208,7 +207,7 @@ export class AuthService {
           data: {
             username: createPTDto.username,
             password: hashedPassword,
-            role_id: 4, // Luôn set role_id = 4 cho PT
+            role_id: 3, // Luôn set role_id = 4 cho PT
             Status_id: 1,
             gym: createPTDto.gym,
           },
