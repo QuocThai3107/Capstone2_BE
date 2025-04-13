@@ -106,7 +106,9 @@ export class AuthService {
 
       // Tìm user
       const user = await this.prisma.user.findFirst({
-        where: { username: loginDto.username }
+        where: { 
+          username: loginDto.username
+        }
       });
 
       if (!user) {
@@ -114,6 +116,10 @@ export class AuthService {
       }
 
       // Kiểm tra password
+      if (!user.password) {
+        throw new UnauthorizedException('Lỗi xác thực: Không tìm thấy mật khẩu');
+      }
+
       const isMatch = await bcrypt.compare(loginDto.password, user.password);
       
       if (!isMatch) {
@@ -127,9 +133,12 @@ export class AuthService {
         role_id: user.role_id
       };
 
+      // Sử dụng JwtService để tạo token
+      const access_token = this.jwtService.sign(payload);
+
       // Trả về token và thông tin user
       return {
-        access_token: this.jwtService.sign(payload),
+        access_token,
         user: {
           user_id: user.user_id,
           username: user.username,
@@ -141,7 +150,10 @@ export class AuthService {
       };
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Đăng nhập thất bại');
     }
   }
 

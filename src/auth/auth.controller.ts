@@ -26,6 +26,7 @@ export class AuthController {
     return this.authService.registerPT(createPTDto, certificates);
   }
 
+  @Public()
   @Post('login')
   async login(@Body() loginDto: { username: string; password: string }) {
     return this.authService.login(loginDto);
@@ -60,5 +61,4 @@ export class AuthController {
     }
     return this.authService.getCurrentUserRole(userId);
   }
-
 } 
