@@ -348,14 +348,8 @@ export class UsersService {
   }
 
   async getProfile(userId: number) {
-    if (!userId) {
-      throw new Error('User ID is required');
-    }
-
     const user = await this.prisma.user.findUnique({
-      where: { 
-        user_id: userId 
-      },
+      where: { user_id: userId },
       select: {
         user_id: true,
         username: true,
@@ -366,8 +360,8 @@ export class UsersService {
         imgUrl: true,
         introduction: true,
         Health_information: true,
-        illness: true
-      }
+        illness: true,
+      },
     });
 
     if (!user) {
@@ -376,7 +370,7 @@ export class UsersService {
 
     return {
       status: 'success',
-      data: user
+      data: user,
     };
   }
 

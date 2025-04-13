@@ -42,89 +42,6 @@ export class UsersController {
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
-  @Get('profile/me/health-analysis')
-  @UseGuards(JwtAuthGuard)
-  async analyzeMyHealth(@GetUser('user_id') userId: number) {
-    try {
-      if (!userId) {
-        return {
-          status: 'error',
-          message: 'User ID not found in token'
-        };
-      }
-
-      const user = await this.usersService.getProfile(userId);
-      
-      if (!user) {
-        return {
-          status: 'error',
-          message: 'Không tìm thấy thông tin người dùng'
-        };
-      }
-
-      const analysis = await this.healthAnalyzer.analyze_health_info(
-        user.data.Health_information || '',
-        user.data.illness || ''
-      );
-
-      return {
-        status: 'success',
-        data: {
-          userId: user.data.user_id,
-          healthInfo: user.data.Health_information,
-          illness: user.data.illness,
-          workoutTags: analysis.workout_tags || [],
-          healthInfoTags: analysis.health_info_tags || [],
-          illnessTags: analysis.illness_tags || [],
-          message: analysis.message || ''
-        }
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
-
-  @Get(':id/health-analysis')
-  async analyzeUserHealth(@Param('id') id: string) {
-    try {
-      const user = await this.usersService.findOne(+id);
-      
-      if (!user) {
-        return {
-          status: 'error',
-          message: 'User not found'
-        };
-      }
-
-      const userResponse: UserResponse = {
-        status: 'success',
-        data: user
-      };
-
-      const result = await this.healthAnalyzer.analyze_health_info(
-        userResponse.data.Health_information || '',
-        userResponse.data.illness || ''
-      );
-
-      return {
-        status: 'success',
-        data: {
-          userId: userResponse.data.user_id,
-          healthInfo: userResponse.data.Health_information,
-          illness: userResponse.data.illness,
-          analysis: result
-        }
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
 
   @Patch('profile/:id')
   @UseInterceptors(FileInterceptor('image'))
@@ -166,4 +83,68 @@ export class UsersController {
   async getMyPTProfile(@GetUser('user_id') userId: number) {
     return this.usersService.getPTProfile(userId);
   }
-}
+
+  @Get('profile/me/health-analysis')
+  @UseGuards(JwtAuthGuard)
+  async analyzeMyHealth(@GetUser('user_id') userId: number) {
+    const user = await this.usersService.getProfile(userId);
+    
+    if (!user) {
+      return {
+        message: 'Không tìm thấy thông tin người dùng',
+        tags: []
+      };
+    }
+
+    const analysis = this.healthAnalyzer.analyze_health_info(
+      user.data.Health_information,
+      user.data.illness
+    );
+
+    return {
+      userId: user.data.user_id,
+      healthInfo: user.data.Health_information,
+      illness: user.data.illness,
+      ...analysis
+    };
+  }
+
+  @Get(':id/health-analysis')
+  async analyzeUserHealth(@Param('id') id: string) {
+    try {
+      const user = await this.usersService.findOne(+id);
+      
+      if (!user) {
+        return {
+          status: 'error',
+          message: 'User not found'
+        };
+      }
+
+      const userResponse: UserResponse = {
+        status: 'success',
+        data: user
+      };
+
+      const result = await this.healthAnalyzer.analyze_health_info(
+        userResponse.data.Health_information || '',
+        userResponse.data.illness || ''
+      );
+
+      return {
+        status: 'success',
+        data: {
+          userId: userResponse.data.user_id,
+          healthInfo: userResponse.data.Health_information,
+          illness: userResponse.data.illness,
+          analysis: result
+        }
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
+  }
+} 
