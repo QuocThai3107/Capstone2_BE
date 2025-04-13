@@ -9,8 +9,7 @@ import { LocalStrategy } from './strategy/local.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RoleGuard } from './guards/role.guard';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
-
-const JWT_SECRET = 'Capstone2BE_2024!@#SECURE_JWT_KEY_987654321';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -18,8 +17,11 @@ const JWT_SECRET = 'Capstone2BE_2024!@#SECURE_JWT_KEY_987654321';
     PrismaModule,
     PassportModule,
     JwtModule.register({
-      secret: JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+      secret: 'Capstone2BE_2024!@#SECURE_JWT_KEY_987654321',
+      signOptions: { 
+        expiresIn: '1d',
+        algorithm: 'HS256'
+      },
     }),
     CloudinaryModule,
   ],
