@@ -16,7 +16,8 @@ export class AuthController {
   signup(@Body() createUserDto: CreateUserDto) {
     return this.authService.signup(createUserDto);
   }
-
+  
+  @Public()
   @Post('register-pt')
   @UseInterceptors(FilesInterceptor('certificates', 10)) // Cho phép upload tối đa 10 ảnh
   async registerPT(
