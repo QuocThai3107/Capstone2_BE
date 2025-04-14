@@ -6,9 +6,22 @@ import { UpdateUserAdminDto } from './dto/update-user-admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterFile } from '../interfaces/file.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { GetUser } from '../auth/decorator';
+import { GetUser, Public } from '../auth/decorator';
 import { HealthAnalyzer } from '../AI/health_analyzer';
 import { UserResponse } from './interfaces/user.interface';
+
+interface HealthAnalysisResponse {
+  recommended_tags: string[];
+  exclude_tags: string[];
+  message: string;
+}
+
+interface HealthAnalyzerResponse {
+  workout_tags: string[];
+  health_info_tags: string[];
+  illness_tags: string[];
+  message: string;
+}
 
 @Controller('users')
 export class UsersController {
@@ -23,16 +36,20 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @Public()
   @Get('gym')
   async getGymUsers() {
     return this.usersService.getGymUsers();
   }
+
+  @Public()
   @Get('gym/pts')
   @UseGuards(JwtAuthGuard)
   async getPTsByGym() {
     return this.usersService.getPTsByGym();
   }
   
+  @Public()
   @Get('public/:id')
   async getPublicProfile(@Param('id') id: string) {
     return this.usersService.getPublicProfile(+id);
@@ -66,7 +83,14 @@ export class UsersController {
       const analysis = await this.healthAnalyzer.analyze_health_info(
         user.data.Health_information || '',
         user.data.illness || ''
-      );
+      ) as HealthAnalyzerResponse;
+
+      // Chuyển đổi dữ liệu từ HealthAnalyzerResponse sang HealthAnalysisResponse
+      const convertedAnalysis: HealthAnalysisResponse = {
+        recommended_tags: [...analysis.workout_tags, ...analysis.health_info_tags],
+        exclude_tags: analysis.illness_tags,
+        message: analysis.message
+      };
 
       return {
         status: 'success',
@@ -74,10 +98,9 @@ export class UsersController {
           userId: user.data.user_id,
           healthInfo: user.data.Health_information,
           illness: user.data.illness,
-          workoutTags: analysis.workout_tags || [],
-          healthInfoTags: analysis.health_info_tags || [],
-          illnessTags: analysis.illness_tags || [],
-          message: analysis.message || ''
+          recommended_tags: convertedAnalysis.recommended_tags || [],
+          exclude_tags: convertedAnalysis.exclude_tags || [],
+          message: convertedAnalysis.message || ''
         }
       };
     } catch (error) {
@@ -88,6 +111,7 @@ export class UsersController {
     }
   }
 
+  @Public()
   @Get(':id/health-analysis')
   async analyzeUserHealth(@Param('id') id: string) {
     try {
@@ -105,10 +129,17 @@ export class UsersController {
         data: user
       };
 
-      const result = await this.healthAnalyzer.analyze_health_info(
+      const analysis = await this.healthAnalyzer.analyze_health_info(
         userResponse.data.Health_information || '',
         userResponse.data.illness || ''
-      );
+      ) as HealthAnalyzerResponse;
+
+      // Chuyển đổi dữ liệu từ HealthAnalyzerResponse sang HealthAnalysisResponse
+      const convertedAnalysis: HealthAnalysisResponse = {
+        recommended_tags: [...analysis.workout_tags, ...analysis.health_info_tags],
+        exclude_tags: analysis.illness_tags,
+        message: analysis.message
+      };
 
       return {
         status: 'success',
@@ -116,7 +147,9 @@ export class UsersController {
           userId: userResponse.data.user_id,
           healthInfo: userResponse.data.Health_information,
           illness: userResponse.data.illness,
-          analysis: result
+          recommended_tags: convertedAnalysis.recommended_tags || [],
+          exclude_tags: convertedAnalysis.exclude_tags || [],
+          message: convertedAnalysis.message || ''
         }
       };
     } catch (error) {
