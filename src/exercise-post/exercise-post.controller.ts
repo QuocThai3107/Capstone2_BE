@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipeBuilder, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipeBuilder, HttpStatus, Query } from '@nestjs/common';
 import { ExercisePostService } from './exercise-post.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
@@ -59,6 +59,28 @@ export class ExercisePostController {
   }
 
   @Public()
+  @Get('search')
+  async searchExercises(
+    @Query('tags') tags?: string,
+    @Query('name') name?: string,
+    @Query('description') description?: string,
+  ) {
+    const searchParams = {
+      tags: tags ? tags.split(',') : [],
+      name,
+      description
+    };
+    return this.exercisePostService.search(searchParams);
+  }
+
+  @Public()
+  @Get('bytags')
+  async getExercisesByTags(@Query('tags') tags: string) {
+    const tagIds = tags.split(',').map(id => parseInt(id));
+    return this.exercisePostService.findByTags(tagIds);
+  }
+
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.exercisePostService.findOne(+id);
@@ -77,5 +99,24 @@ export class ExercisePostController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.exercisePostService.remove(+id);
+  }
+
+  @Public()
+  @Get('tags')
+  getAllTags() {
+    return this.exercisePostService.getAllTags();
+  }
+
+  @Public()
+  @Get('search/bytags')
+  async searchByTagNames(@Query('tagNames') tagNames: string) {
+    if (!tagNames) {
+      return {
+        status: 'error',
+        message: 'Vui lòng cung cấp ít nhất một tag name'
+      };
+    }
+    const tagNameArray = tagNames.split(',').map(tag => tag.trim());
+    return this.exercisePostService.searchByTagNames(tagNameArray);
   }
 } 

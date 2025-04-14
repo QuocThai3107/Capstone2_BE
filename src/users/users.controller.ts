@@ -44,9 +44,20 @@ export class UsersController {
 
   @Public()
   @Get('gym/pts')
-  @UseGuards(JwtAuthGuard)
   async getPTsByGym() {
     return this.usersService.getPTsByGym();
+  }
+
+  @Public()
+  @Get('pt')
+  async getAllPTs() {
+    return this.usersService.getAllPTs();
+  }
+
+  @Get('pt/:id')
+  @UseGuards(JwtAuthGuard)
+  async getPTDetail(@Param('id') id: string) {
+    return this.usersService.getPTDetail(+id);
   }
   
   @Public()
@@ -110,7 +121,6 @@ export class UsersController {
       };
     }
   }
-
   @Public()
   @Get(':id/health-analysis')
   async analyzeUserHealth(@Param('id') id: string) {
@@ -181,17 +191,6 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
-  }
-
-  @Get('pt')
-  async getAllPTs() {
-    return this.usersService.getAllPTs();
-  }
-
-  @Get('pt/:id')
-  @UseGuards(JwtAuthGuard)
-  async getPTDetail(@Param('id') id: string) {
-    return this.usersService.getPTDetail(+id);
   }
 
   @Get('profile/me')

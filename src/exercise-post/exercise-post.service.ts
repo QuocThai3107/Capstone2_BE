@@ -183,4 +183,186 @@ export class ExercisePostService {
       where: { exercisepost_id: id }
     });
   }
+
+  // Lấy tất cả các tags
+  async getAllTags() {
+    try {
+      const tags = await this.prisma.tag.findMany({
+        select: {
+          tag_id: true,
+          tag_name: true
+        }
+      });
+
+      return {
+        status: 'success',
+        data: tags
+      };
+    } catch (error) {
+      console.error('Error getting all tags:', error);
+      throw new Error('Có lỗi khi lấy danh sách tags');
+    }
+  }
+
+  // Tìm bài tập theo tên tag
+  async searchByTagNames(tagNames: string[]) {
+    try {
+      // Tìm bài tập có chứa TẤT CẢ các tag trong danh sách (AND condition)
+      const exercises = await this.prisma.exercisepost.findMany({
+        where: {
+          AND: tagNames.map(tagName => ({
+            exerciseposttag: {
+              some: {
+                tag: {
+                  tag_name: {
+                    contains: tagName.toLowerCase()
+                  }
+                }
+              }
+            }
+          }))
+        },
+        include: {
+          step: true,
+          exerciseposttag: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      });
+
+      if (exercises.length === 0) {
+        return {
+          status: 'success',
+          message: 'Không tìm thấy bài tập nào phù hợp với tất cả các tag đã chọn',
+          data: []
+        };
+      }
+
+      return {
+        status: 'success',
+        data: exercises.map(exercise => ({
+          exercisepost_id: exercise.exercisepost_id,
+          name: exercise.name,
+          description: exercise.description,
+          img_url: exercise.img_url,
+          video_rul: exercise.video_rul,
+          steps: exercise.step,
+          tags: exercise.exerciseposttag.map(tag => ({
+            tag_id: tag.tag.tag_id,
+            tag_name: tag.tag.tag_name
+          }))
+        }))
+      };
+    } catch (error) {
+      console.error('Error searching exercises by tag names:', error);
+      throw new Error('Có lỗi khi tìm bài tập theo tags');
+    }
+  }
+
+  async search(searchParams: { tags: string[], name?: string, description?: string }) {
+    try {
+      const where: any = {};
+      
+      // Xử lý tìm kiếm theo tags
+      if (searchParams.tags.length > 0) {
+        where.AND = searchParams.tags.map(tagId => ({
+          exerciseposttag: {
+            some: {
+              tag_id: parseInt(tagId)
+            }
+          }
+        }));
+      }
+
+      // Tìm kiếm theo tên
+      if (searchParams.name) {
+        where.name = {
+          contains: searchParams.name.toLowerCase()
+        };
+      }
+
+      // Tìm kiếm theo mô tả
+      if (searchParams.description) {
+        where.description = {
+          contains: searchParams.description.toLowerCase()
+        };
+      }
+
+      const exercises = await this.prisma.exercisepost.findMany({
+        where,
+        include: {
+          step: true,
+          exerciseposttag: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      });
+
+      return {
+        status: 'success',
+        data: exercises.map(exercise => ({
+          exercisepost_id: exercise.exercisepost_id,
+          name: exercise.name,
+          description: exercise.description,
+          img_url: exercise.img_url,
+          video_rul: exercise.video_rul,
+          steps: exercise.step,
+          tags: exercise.exerciseposttag.map(tag => ({
+            tag_id: tag.tag.tag_id,
+            tag_name: tag.tag.tag_name
+          }))
+        }))
+      };
+    } catch (error) {
+      console.error('Error searching exercises:', error);
+      throw new Error('Có lỗi khi tìm kiếm bài tập');
+    }
+  }
+
+  async findByTags(tagIds: number[]) {
+    try {
+      const exercises = await this.prisma.exercisepost.findMany({
+        where: {
+          AND: tagIds.map(tagId => ({
+            exerciseposttag: {
+              some: {
+                tag_id: tagId
+              }
+            }
+          }))
+        },
+        include: {
+          step: true,
+          exerciseposttag: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      });
+
+      return {
+        status: 'success',
+        data: exercises.map(exercise => ({
+          exercisepost_id: exercise.exercisepost_id,
+          name: exercise.name,
+          description: exercise.description,
+          img_url: exercise.img_url,
+          video_rul: exercise.video_rul,
+          steps: exercise.step,
+          tags: exercise.exerciseposttag.map(tag => ({
+            tag_id: tag.tag.tag_id,
+            tag_name: tag.tag.tag_name
+          }))
+        }))
+      };
+    } catch (error) {
+      console.error('Error finding exercises by tags:', error);
+      throw new Error('Có lỗi khi tìm bài tập theo tags');
+    }
+  }
 } 
