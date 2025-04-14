@@ -147,5 +147,34 @@ export const TAG_RULES: { [key: string]: { exclude: string[]; recommend: string[
   'Muscle Weakness': {
     'exclude': ['heavy lifting', 'high intensity', 'complex movements'],
     'recommend': ['light weights', 'bodyweight exercises', 'progressive overload', 'proper form']
+  },
+  // Rules for health information
+  'Weight Loss': {
+    'exclude': ['heavy lifting', 'powerlifting', 'bulking'],
+    'recommend': ['cardio', 'hiit', 'endurance', 'full body']
+  },
+  'Muscle Gain': {
+    'exclude': ['light weights', 'cardio', 'endurance'],
+    'recommend': ['strength', 'powerlifting', 'compound', 'progressive overload']
+  },
+  'Slim': {
+    'exclude': ['heavy lifting', 'powerlifting', 'bulking'],
+    'recommend': ['cardio', 'hiit', 'endurance', 'full body', 'yoga', 'pilates']
+  },
+  'Fat': {
+    'exclude': ['heavy lifting', 'high impact', 'intense cardio'],
+    'recommend': ['walking', 'swimming', 'light cardio', 'low impact exercise', 'yoga']
+  },
+  'Normal Diet': {
+    'exclude': ['extreme diet', 'fasting', 'restrictive'],
+    'recommend': ['balanced', 'moderate', 'sustainable', 'healthy eating']
+  },
+  'Vegetarian': {
+    'exclude': ['meat', 'animal products'],
+    'recommend': ['plant-based', 'vegan', 'vegetarian', 'meatless']
+  },
+  'Special Diet': {
+    'exclude': ['processed', 'sugar', 'unhealthy'],
+    'recommend': ['clean eating', 'healthy', 'balanced', 'nutritious']
   }
 }; 
