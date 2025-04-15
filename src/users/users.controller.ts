@@ -59,41 +59,7 @@ export class UsersController {
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
-  @Patch('pt/approve/:id')
-  @UseGuards(JwtAuthGuard)
-  async approvePT(@Param('id') id: string) {
-    try {
-      const result = await this.usersService.approvePT(+id);
-      return {
-        status: 'success',
-        message: 'Đã duyệt PT',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
-
-  @Delete('pt/reject/:id')
-  @UseGuards(JwtAuthGuard)
-  async rejectPT(@Param('id') id: string) {
-    try {
-      const result = await this.usersService.rejectPT(+id);
-      return {
-        status: 'success',
-        message: 'Đã từ chối và xóa PT',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
+  
   @Get('profile/me/health-analysis')
   @UseGuards(JwtAuthGuard)
   async analyzeMyHealth(@GetUser('user_id') userId: number) {
