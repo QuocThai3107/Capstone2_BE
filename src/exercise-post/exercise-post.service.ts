@@ -1,72 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { CreateExercisePostDto } from './dto/create-exercise-post.dto';
+import { UpdateExercisePostDto } from './dto/update-exercise-post.dto';
 
 @Injectable()
 export class ExercisePostService {
-  constructor(
-    private prisma: PrismaService,
-    private cloudinaryService: CloudinaryService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(createExercisePostDto: CreateExercisePostDto, file?: Express.Multer.File) {
-    let imgUrl = createExercisePostDto.imgUrl;
+  async create(createExercisePostDto: CreateExercisePostDto, file: Express.Multer.File, userId: number) {
+    const { name, description, tagIds, steps, video_rul } = createExercisePostDto;
     
-    // Nếu có file upload, xử lý upload lên Cloudinary
-    if (file) {
-      const uploadResult = await this.cloudinaryService.uploadImage(file);
-      imgUrl = uploadResult.url;
-    }
-
-    // Chuyển đổi kiểu dữ liệu để phù hợp với Prisma
-    const userId = typeof createExercisePostDto.user_id === 'string' 
-      ? parseInt(createExercisePostDto.user_id) 
-      : createExercisePostDto.user_id;
-
-    // Xử lý tagIds có thể là string, string[] hoặc number[]
-    let tagIds: number[] = [];
-    if (createExercisePostDto.tagIds) {
-      if (typeof createExercisePostDto.tagIds === 'string') {
-        // Nếu là string đơn (có thể từ form-data)
-        tagIds = [parseInt(createExercisePostDto.tagIds)];
-      } else if (Array.isArray(createExercisePostDto.tagIds)) {
-        // Nếu là mảng (string[] hoặc number[])
-        tagIds = createExercisePostDto.tagIds.map(id => 
-          typeof id === 'string' ? parseInt(id) : id
-        );
-      }
-    }
-    
-    const result = await this.prisma.exercisepost.create({
+    // Tạo bài tập
+    const exercisePost = await this.prisma.exercisepost.create({
       data: {
-        name: createExercisePostDto.name,
-        description: createExercisePostDto.description,
-        img_url: imgUrl,
-        video_rul: createExercisePostDto.video_rul,
-        user: {
-          connect: {
-            user_id: userId
-          }
+        name,
+        description,
+        img_url: file ? file.filename : null,
+        video_rul,
+        user_id: userId,
+        status_id: 1, // Chờ duyệt
+        step: {
+          create: steps?.map((step, index) => ({
+            step_number: (index + 1).toString(),
+            instruction: step.instruction,
+            img_url: step.img_url
+          }))
         },
-        step: createExercisePostDto.steps ? {
-          createMany: {
-            data: (Array.isArray(createExercisePostDto.steps) ? createExercisePostDto.steps : []).map(step => ({
-              step_number: typeof step.stepNumber === 'number' 
-                ? step.stepNumber.toString() 
-                : step.stepNumber,
-              instruction: step.instruction,
-              img_url: step.imgUrl
-            }))
-          }
-        } : undefined,
-        exerciseposttag: tagIds.length > 0 ? {
-          createMany: {
-            data: tagIds.map(tagId => ({
-              tag_id: tagId
-            }))
-          }
-        } : undefined
+        exerciseposttag: {
+          create: Array.isArray(tagIds) ? tagIds.map(tagId => ({
+            tag_id: tagId
+          })) : []
+        }
       },
       include: {
         step: true,
@@ -77,7 +41,8 @@ export class ExercisePostService {
         }
       }
     });
-    return result;
+
+    return exercisePost;
   }
 
   async findAll() {
@@ -107,65 +72,38 @@ export class ExercisePostService {
     });
   }
 
-  async update(id: number, updateExercisePostDto: UpdateExercisePostDto, file?: Express.Multer.File) {
-    // Xử lý file upload nếu có
-    let imgUrl = updateExercisePostDto.imgUrl;
-    if (file) {
-      const uploadResult = await this.cloudinaryService.uploadImage(file);
-      imgUrl = uploadResult.url;
-    }
+  async update(id: number, updateExercisePostDto: UpdateExercisePostDto, file: Express.Multer.File) {
+    const { name, description, tagIds, steps, video_rul } = updateExercisePostDto;
 
-    // Chuyển đổi kiểu dữ liệu tagIds
-    let tagIds: number[] = [];
-    if (updateExercisePostDto.tagIds) {
-      if (typeof updateExercisePostDto.tagIds === 'string') {
-        tagIds = [parseInt(updateExercisePostDto.tagIds)];
-      } else if (Array.isArray(updateExercisePostDto.tagIds)) {
-        tagIds = updateExercisePostDto.tagIds.map(id => 
-          typeof id === 'string' ? parseInt(id) : id
-        );
-      }
-    }
+    // Xóa các steps và tags cũ
+    await this.prisma.step.deleteMany({
+      where: { exercisepost_id: id }
+    });
 
-    // Delete old steps
-    if (updateExercisePostDto.steps) {
-      await this.prisma.step.deleteMany({
-        where: { exercisepost_id: id }
-      });
-    }
+    await this.prisma.exerciseposttag.deleteMany({
+      where: { exercisepost_id: id }
+    });
 
-    // Delete old tags
-    if (updateExercisePostDto.tagIds) {
-      await this.prisma.exerciseposttag.deleteMany({
-        where: { exercisepost_id: id }
-      });
-    }
-
+    // Cập nhật bài tập
     return this.prisma.exercisepost.update({
       where: { exercisepost_id: id },
       data: {
-        name: updateExercisePostDto.name,
-        description: updateExercisePostDto.description,
-        img_url: imgUrl,
-        video_rul: updateExercisePostDto.video_rul,
-        step: updateExercisePostDto.steps ? {
-          createMany: {
-            data: (Array.isArray(updateExercisePostDto.steps) ? updateExercisePostDto.steps : []).map(step => ({
-              step_number: typeof step.stepNumber === 'number' 
-                ? step.stepNumber.toString() 
-                : step.stepNumber,
-              instruction: step.instruction,
-              img_url: step.imgUrl
-            }))
-          }
-        } : undefined,
-        exerciseposttag: tagIds.length > 0 ? {
-          createMany: {
-            data: tagIds.map(tagId => ({
-              tag_id: tagId
-            }))
-          }
-        } : undefined
+        name,
+        description,
+        img_url: file ? file.filename : undefined,
+        video_rul,
+        step: {
+          create: steps?.map((step, index) => ({
+            step_number: (index + 1).toString(),
+            instruction: step.instruction,
+            img_url: step.img_url
+          }))
+        },
+        exerciseposttag: {
+          create: Array.isArray(tagIds) ? tagIds.map(tagId => ({
+            tag_id: tagId
+          })) : []
+        }
       },
       include: {
         step: true,
@@ -182,5 +120,9 @@ export class ExercisePostService {
     return this.prisma.exercisepost.delete({
       where: { exercisepost_id: id }
     });
+  }
+
+  async getAllTags() {
+    return this.prisma.tag.findMany();
   }
 } 

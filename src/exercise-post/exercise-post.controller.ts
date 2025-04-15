@@ -1,70 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipeBuilder, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { ExercisePostService } from './exercise-post.service';
+import { CreateExercisePostDto } from './dto/create-exercise-post.dto';
+import { UpdateExercisePostDto } from './dto/update-exercise-post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
-import { Public } from '../auth/decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorator';
 
 @Controller('exercise-post')
 export class ExercisePostController {
   constructor(private readonly exercisePostService: ExercisePostService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('imgUrl'))
-  async create(
+  create(
     @Body() createExercisePostDto: CreateExercisePostDto,
-    @UploadedFile(
-      new ParseFilePipeBuilder()
-        .addFileTypeValidator({
-          fileType: /(jpg|jpeg|png|gif)$/,
-        })
-        .addMaxSizeValidator({
-          maxSize: 5 * 1024 * 1024, // 5MB
-        })
-        .build({
-          fileIsRequired: false,
-          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-        }),
-    ) 
-    file?: Express.Multer.File
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser('user_id') userId: number
   ) {
-    // Log để debug
-    console.log('DTO received:', createExercisePostDto);
-    console.log('File received:', file);
-    
-    // Parse các trường có thể là string nhưng cần là số
-    if (createExercisePostDto.user_id && typeof createExercisePostDto.user_id === 'string') {
-      createExercisePostDto.user_id = parseInt(createExercisePostDto.user_id);
-    }
-    
-    if (createExercisePostDto.tagIds && typeof createExercisePostDto.tagIds === 'string') {
-      createExercisePostDto.tagIds = [parseInt(createExercisePostDto.tagIds)];
-    }
-    
-    // Parse steps nếu được gửi dưới dạng string
-    if (createExercisePostDto.steps && typeof createExercisePostDto.steps === 'string') {
-      try {
-        createExercisePostDto.steps = JSON.parse(createExercisePostDto.steps);
-      } catch (e) {
-        console.error('Failed to parse steps:', e);
-      }
-    }
-    
-    return this.exercisePostService.create(createExercisePostDto, file);
+    return this.exercisePostService.create(createExercisePostDto, file, userId);
   }
 
-  @Public()
   @Get()
   findAll() {
     return this.exercisePostService.findAll();
   }
 
-  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.exercisePostService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('imgUrl'))
   update(
     @Param('id') id: string,
@@ -75,7 +43,13 @@ export class ExercisePostController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string) {
     return this.exercisePostService.remove(+id);
+  }
+
+  @Get('tag/tag')
+  getAllTags() {
+    return this.exercisePostService.getAllTags();
   }
 } 

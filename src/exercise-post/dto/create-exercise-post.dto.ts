@@ -1,19 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, IsNumberString } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
 
 export class CreateExercisePostDto {
-  @IsNumberString()
-  user_id: number | string;
-
   @IsString()
   name: string;
 
   @IsString()
   description: string;
-
-  @IsOptional()
-  @IsString()
-  imgUrl?: string;
 
   @IsOptional()
   @IsString()
@@ -27,17 +20,14 @@ export class CreateExercisePostDto {
 
   @IsOptional()
   @IsArray()
-  tagIds?: number[] | string | string[];
+  tagIds?: number[];
 }
 
 export class CreateStepDto {
-  @IsNumberString()
-  stepNumber: string | number;
-
   @IsString()
   instruction: string;
 
   @IsOptional()
   @IsString()
-  imgUrl?: string;
+  img_url?: string;
 } 
