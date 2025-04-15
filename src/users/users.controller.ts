@@ -206,6 +206,7 @@ export class UsersController {
     return this.usersService.updateProfile(+id, updateUserDto, file);
   }
 
+  @Public()
   @Patch(':id')
   updateAdmin(
     @Param('id') id: string,
