@@ -35,40 +35,65 @@ export class UsersController {
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
-<<<<<<< HEAD
-=======
 
->>>>>>> ba3762edd01abfcbcf54b0f2f882cb6bd1b127cc
   @Public()
   @Get('gym')
   async getGymUsers() {
     return this.usersService.getGymUsers();
   }
-<<<<<<< HEAD
-=======
 
->>>>>>> ba3762edd01abfcbcf54b0f2f882cb6bd1b127cc
   @Public()
   @Get('gym/pts')
   @UseGuards(JwtAuthGuard)
   async getPTsByGym() {
     return this.usersService.getPTsByGym();
   }
-<<<<<<< HEAD
-=======
   
->>>>>>> ba3762edd01abfcbcf54b0f2f882cb6bd1b127cc
   @Public()
   @Get('public/:id')
   async getPublicProfile(@Param('id') id: string) {
     return this.usersService.getPublicProfile(+id);
   }
-  @Public()
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
-  @Public()
+  @Patch('pt/approve/:id')
+  @UseGuards(JwtAuthGuard)
+  async approvePT(@Param('id') id: string) {
+    try {
+      const result = await this.usersService.approvePT(+id);
+      return {
+        status: 'success',
+        message: 'Đã duyệt PT',
+        data: result
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
+  }
+
+  @Delete('pt/reject/:id')
+  @UseGuards(JwtAuthGuard)
+  async rejectPT(@Param('id') id: string) {
+    try {
+      const result = await this.usersService.rejectPT(+id);
+      return {
+        status: 'success',
+        message: 'Đã từ chối và xóa PT',
+        data: result
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
+  }
   @Get('profile/me/health-analysis')
   @UseGuards(JwtAuthGuard)
   async analyzeMyHealth(@GetUser('user_id') userId: number) {
@@ -119,10 +144,7 @@ export class UsersController {
       };
     }
   }
-<<<<<<< HEAD
-=======
 
->>>>>>> ba3762edd01abfcbcf54b0f2f882cb6bd1b127cc
   @Public()
   @Get(':id/health-analysis')
   async analyzeUserHealth(@Param('id') id: string) {
@@ -213,32 +235,13 @@ export class UsersController {
     return this.usersService.getPTProfile(userId);
   }
 
-  @Patch('pt/approve/:id')
+  @Get('pt/pending')
   @UseGuards(JwtAuthGuard)
-  async approvePT(@Param('id') id: string) {
+  async getPendingPTs() {
     try {
-      const result = await this.usersService.updateStatus(+id, 2); // 2 = active
+      const result = await this.usersService.getPendingPTs();
       return {
         status: 'success',
-        message: 'PT đã được phê duyệt',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
-
-  @Delete('pt/reject/:id')
-  @UseGuards(JwtAuthGuard)
-  async rejectPT(@Param('id') id: string) {
-    try {
-      const result = await this.usersService.remove(+id);
-      return {
-        status: 'success',
-        message: 'PT đã bị từ chối và xóa',
         data: result
       };
     } catch (error) {

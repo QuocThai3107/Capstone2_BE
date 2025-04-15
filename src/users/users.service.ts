@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -483,5 +483,132 @@ export class UsersService {
       Status_id: pt.Status_id,
       certificate: pt.certificate || []
     }));
+  }
+
+  async getPendingPTs() {
+    try {
+      // Lấy danh sách tên gym từ các Gym Owner (role_id = 4)
+      const gymOwners = await this.prisma.user.findMany({
+        where: {
+          role_id: 4
+        },
+        select: {
+          name: true
+        }
+      });
+
+      const gymNames = gymOwners.map(owner => owner.name);
+
+      // Lấy danh sách PT (role_id = 3, Status_id = 1) thuộc các gym đó
+      const pts = await this.prisma.user.findMany({
+        where: {
+          role_id: 3,
+          Status_id: 1,
+          gym: {
+            in: gymNames
+          }
+        },
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          email: true,
+          phoneNum: true,
+          gym: true,
+          Status_id: true,
+          certificate: true
+        }
+      });
+
+      return pts.map(pt => ({
+        id: pt.user_id,
+        username: pt.username,
+        name: pt.name,
+        email: pt.email,
+        phoneNum: pt.phoneNum,
+        gym: pt.gym,
+        Status_id: pt.Status_id,
+        certificate: pt.certificate || []
+      }));
+    } catch (error) {
+      throw new InternalServerErrorException('Lỗi khi lấy danh sách PT chờ duyệt');
+    }
+  }
+
+  async approvePT(id: number) {
+    try {
+      const pt = await this.prisma.user.findFirst({
+        where: {
+          AND: [
+            { user_id: id },
+            { role_id: 3 },
+            { Status_id: 1 }
+          ]
+        }
+      });
+
+      if (!pt) {
+        throw new NotFoundException('PT không tồn tại hoặc không ở trạng thái chờ duyệt');
+      }
+
+      const updatedPT = await this.prisma.user.update({
+        where: { user_id: id },
+        data: {
+          Status_id: 2, // Active
+          updated_at: new Date()
+        },
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          email: true,
+          phoneNum: true,
+          role_id: true,
+          Status_id: true,
+          gym: true,
+          updated_at: true
+        }
+      });
+
+      return updatedPT;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async rejectPT(id: number) {
+    try {
+      const pt = await this.prisma.user.findFirst({
+        where: {
+          AND: [
+            { user_id: id },
+            { role_id: 3 },
+            { Status_id: 1 }
+          ]
+        }
+      });
+
+      if (!pt) {
+        throw new NotFoundException('PT không tồn tại hoặc không ở trạng thái chờ duyệt');
+      }
+
+      const deletedPT = await this.prisma.user.delete({
+        where: { user_id: id },
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          email: true,
+          phoneNum: true,
+          role_id: true,
+          Status_id: true,
+          gym: true
+        }
+      });
+
+      return deletedPT;
+    } catch (error) {
+      throw error;
+    }
   }
 } 
