@@ -57,7 +57,12 @@ export class ExercisePostService {
       }
     });
   }
-
+  async updateStatus(id: number, status_id: number) {
+    return this.prisma.exercisepost.update({
+      where: { exercisepost_id: id },
+      data: { status_id }
+    });
+  }
   async findOne(id: number) {
     return this.prisma.exercisepost.findUnique({
       where: { exercisepost_id: id },

@@ -9,7 +9,39 @@ import { GetUser } from '../auth/decorator';
 @Controller('exercise-post')
 export class ExercisePostController {
   constructor(private readonly exercisePostService: ExercisePostService) {}
+  
+  @Get()
+  findAll() {
+    return this.exercisePostService.findAll();
+  }
 
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.exercisePostService.findOne(+id);
+  } 
+  @Get('tag/tag')
+  getAllTags() {
+    return this.exercisePostService.getAllTags();
+  }
+  
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('imgUrl'))
+  update(
+    @Param('id') id: string,
+    @Body() updateExercisePostDto: UpdateExercisePostDto,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return this.exercisePostService.update(+id, updateExercisePostDto, file);
+  }
+  @Patch(':id/status')
+@UseGuards(JwtAuthGuard)
+updateStatus(
+  @Param('id') id: string,
+  @Body() updateStatusDto: { status_id: number }
+) {
+  return this.exercisePostService.updateStatus(+id, updateStatusDto.status_id);
+}
   @Post()
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('imgUrl'))
@@ -21,26 +53,7 @@ export class ExercisePostController {
     return this.exercisePostService.create(createExercisePostDto, file, userId);
   }
 
-  @Get()
-  findAll() {
-    return this.exercisePostService.findAll();
-  }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.exercisePostService.findOne(+id);
-  }
-
-  @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('imgUrl'))
-  update(
-    @Param('id') id: string,
-    @Body() updateExercisePostDto: UpdateExercisePostDto,
-    @UploadedFile() file: Express.Multer.File
-  ) {
-    return this.exercisePostService.update(+id, updateExercisePostDto, file);
-  }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
@@ -48,8 +61,5 @@ export class ExercisePostController {
     return this.exercisePostService.remove(+id);
   }
 
-  @Get('tag/tag')
-  getAllTags() {
-    return this.exercisePostService.getAllTags();
-  }
+
 } 
