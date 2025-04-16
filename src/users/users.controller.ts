@@ -55,18 +55,32 @@ export class UsersController {
     return this.usersService.getPublicProfile(+id);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-  @Patch('pt/approve/:id')
+  @Get('pt/:id')
   @UseGuards(JwtAuthGuard)
-  async approvePT(@Param('id') id: string) {
+  async getPTDetail(@Param('id') id: string) {
+    return this.usersService.getPTDetail(+id);
+  }
+
+  @Get('profile/me')
+  @UseGuards(JwtAuthGuard)
+  async getMyProfile(@GetUser('user_id') userId: number) {
+    return this.usersService.getProfile(userId);
+  }
+
+  @Get('profile/pt/me')
+  @UseGuards(JwtAuthGuard)
+  async getMyPTProfile(@GetUser('user_id') userId: number) {
+    return this.usersService.getPTProfile(userId);
+  }
+
+  @Public()
+  @Get('pt/pending')
+  @UseGuards(JwtAuthGuard)
+  async getPendingPTs() {
     try {
-      const result = await this.usersService.approvePT(+id);
+      const result = await this.usersService.getPendingPTs();
       return {
         status: 'success',
-        message: 'Đã duyệt PT',
         data: result
       };
     } catch (error) {
@@ -77,23 +91,11 @@ export class UsersController {
     }
   }
 
-  @Delete('pt/reject/:id')
-  @UseGuards(JwtAuthGuard)
-  async rejectPT(@Param('id') id: string) {
-    try {
-      const result = await this.usersService.rejectPT(+id);
-      return {
-        status: 'success',
-        message: 'Đã từ chối và xóa PT',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(+id);
   }
+  
   @Get('profile/me/health-analysis')
   @UseGuards(JwtAuthGuard)
   async analyzeMyHealth(@GetUser('user_id') userId: number) {
@@ -204,6 +206,7 @@ export class UsersController {
     return this.usersService.updateProfile(+id, updateUserDto, file);
   }
 
+  @Public()
   @Patch(':id')
   updateAdmin(
     @Param('id') id: string,
@@ -217,38 +220,4 @@ export class UsersController {
     return this.usersService.remove(+id);
   }
 
-  @Get('pt/:id')
-  @UseGuards(JwtAuthGuard)
-  async getPTDetail(@Param('id') id: string) {
-    return this.usersService.getPTDetail(+id);
-  }
-
-  @Get('profile/me')
-  @UseGuards(JwtAuthGuard)
-  async getMyProfile(@GetUser('user_id') userId: number) {
-    return this.usersService.getProfile(userId);
-  }
-
-  @Get('profile/pt/me')
-  @UseGuards(JwtAuthGuard)
-  async getMyPTProfile(@GetUser('user_id') userId: number) {
-    return this.usersService.getPTProfile(userId);
-  }
-
-  @Get('pt/pending')
-  @UseGuards(JwtAuthGuard)
-  async getPendingPTs() {
-    try {
-      const result = await this.usersService.getPendingPTs();
-      return {
-        status: 'success',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
 }
