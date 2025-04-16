@@ -365,4 +365,49 @@ export class ExercisePostService {
       throw new Error('Có lỗi khi tìm bài tập theo tags');
     }
   }
+
+  async searchByTags(includeTags: string[], excludeTags: string[]) {
+    const exercisePosts = await this.prisma.exercisepost.findMany({
+      where: {
+        AND: [
+          // Include condition: At least one tag matches
+          includeTags.length > 0 ? {
+            exerciseposttag: {
+              some: {
+                tag: {
+                  tag_name: {
+                    in: includeTags
+                  }
+                }
+              }
+            }
+          } : {},
+          // Exclude condition: None of the tags match
+          excludeTags.length > 0 ? {
+            NOT: {
+              exerciseposttag: {
+                some: {
+                  tag: {
+                    tag_name: {
+                      in: excludeTags
+                    }
+                  }
+                }
+              }
+            }
+          } : {}
+        ]
+      },
+      include: {
+        step: true,
+        exerciseposttag: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    });
+
+    return exercisePosts;
+  }
 } 

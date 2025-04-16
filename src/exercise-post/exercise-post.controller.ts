@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipeBuilder, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseFilePipeBuilder, HttpStatus, Query, BadRequestException } from '@nestjs/common';
 import { ExercisePostService } from './exercise-post.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateExercisePostDto, UpdateExercisePostDto } from './dto';
 import { Public } from '../auth/decorator';
+import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @Controller('exercise-post')
 export class ExercisePostController {
@@ -109,14 +110,35 @@ export class ExercisePostController {
 
   @Public()
   @Get('search/bytags')
-  async searchByTagNames(@Query('tagNames') tagNames: string) {
-    if (!tagNames) {
+  @ApiOperation({ summary: 'Search exercise posts by tags' })
+  @ApiQuery({ name: 'includeTags', required: false, description: 'Tags to include (comma-separated)' })
+  @ApiQuery({ name: 'excludeTags', required: false, description: 'Tags to exclude (comma-separated)' })
+  async searchByTags(
+    @Query('includeTags') includeTags?: string,
+    @Query('excludeTags') excludeTags?: string,
+  ) {
+    try {
+      // Validate that at least one type of tags is provided
+      if (!includeTags && !excludeTags) {
+        throw new BadRequestException('Vui lòng cung cấp ít nhất một tag name để tìm kiếm');
+      }
+
+      // Convert comma-separated strings to arrays, handling empty strings
+      const includeTagArray = includeTags ? includeTags.split(',').map(tag => tag.trim()) : [];
+      const excludeTagArray = excludeTags ? excludeTags.split(',').map(tag => tag.trim()) : [];
+
+      // Call service method with processed tags
+      const results = await this.exercisePostService.searchByTags(includeTagArray, excludeTagArray);
+      
+      return {
+        status: 'success',
+        data: results
+      };
+    } catch (error) {
       return {
         status: 'error',
-        message: 'Vui lòng cung cấp ít nhất một tag name'
+        message: error.message
       };
     }
-    const tagNameArray = tagNames.split(',').map(tag => tag.trim());
-    return this.exercisePostService.searchByTagNames(tagNameArray);
   }
 } 
