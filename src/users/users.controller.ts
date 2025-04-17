@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, InternalServerErrorException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -44,11 +44,17 @@ export class UsersController {
 
   @Public()
   @Get('gym/pts')
-  @UseGuards(JwtAuthGuard)
   async getPTsByGym() {
     return this.usersService.getPTsByGym();
   }
-  
+
+  @Public()
+  @Get('pt')
+  async getAllPTs() {
+    return this.usersService.getAllPTs();
+  }
+
+ 
   @Public()
   @Get('public/:id')
   async getPublicProfile(@Param('id') id: string) {
@@ -146,7 +152,6 @@ export class UsersController {
       };
     }
   }
-
   @Public()
   @Get(':id/health-analysis')
   async analyzeUserHealth(@Param('id') id: string) {
@@ -219,5 +224,4 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
-
 }
