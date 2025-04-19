@@ -48,12 +48,7 @@ export class UsersController {
     return this.usersService.getPTsByGym();
   }
 
-  @Public()
-  @Get('pt')
-  async getAllPTs() {
-    return this.usersService.getAllPTs();
-  }
-
+  
  
   @Public()
   @Get('public/:id')
