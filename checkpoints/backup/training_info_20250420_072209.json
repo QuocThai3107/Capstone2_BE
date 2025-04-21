@@ -1,8 +1,0 @@
-{
-  "fold": 0,
-  "epoch": 15,
-  "is_best": false,
-  "val_accuracy": 0.1257772147655487,
-  "timestamp": "2025-04-20 07:22:09",
-  "run_count": "1"
-}
