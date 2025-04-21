@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import { HEALTH_KEYWORDS, HEALTH_INFO_KEYWORDS, ILLNESS_KEYWORDS, TAG_RULES } from './constants';
 
 export class HealthAnalyzer {
@@ -5,43 +6,18 @@ export class HealthAnalyzer {
   private health_info_keywords: typeof HEALTH_INFO_KEYWORDS;
   private illness_keywords: typeof ILLNESS_KEYWORDS;
   private tag_rules: typeof TAG_RULES;
+  private modelPath: string;
 
-  constructor() {
+  constructor(modelPath: string = './tag_model') {
     this.health_keywords = HEALTH_KEYWORDS;
     this.health_info_keywords = HEALTH_INFO_KEYWORDS;
     this.illness_keywords = ILLNESS_KEYWORDS;
     this.tag_rules = TAG_RULES;
-  }
-
-  private findMatchingTags(text: string, keywords: { [key: string]: string[] }): string[] {
-    const matches: string[] = [];
-    const lowerText = text.toLowerCase();
-
-    for (const [tag, words] of Object.entries(keywords)) {
-      if (words.some(word => lowerText.includes(word.toLowerCase()))) {
-        matches.push(tag);
-      }
-    }
-
-    return matches;
+    this.modelPath = modelPath;
   }
 
   private cleanText(text: string): string {
     return text.toLowerCase().trim();
-  }
-
-  private getTagsFromRules(tags: string[]): { exclude: string[]; recommend: string[] } {
-    const excludeTags: string[] = [];
-    const recommendedTags: string[] = [];
-
-    for (const tag of tags) {
-      if (this.tag_rules[tag]) {
-        excludeTags.push(...this.tag_rules[tag].exclude);
-        recommendedTags.push(...this.tag_rules[tag].recommend);
-      }
-    }
-
-    return { exclude: excludeTags, recommend: recommendedTags };
   }
 
   public async analyze_health_info(health_info: string, illness: string): Promise<{
@@ -55,29 +31,62 @@ export class HealthAnalyzer {
       const cleanedHealthInfo = this.cleanText(health_info);
       const cleanedIllness = this.cleanText(illness);
 
-      // Find matching tags for each category
-      const workoutTags = this.findMatchingTags(cleanedHealthInfo, HEALTH_KEYWORDS);
-      const healthInfoTags = this.findMatchingTags(cleanedHealthInfo, HEALTH_INFO_KEYWORDS);
-      const illnessTags = this.findMatchingTags(cleanedIllness, ILLNESS_KEYWORDS);
+      // Kết hợp health_info và illness thành một text
+      const combinedText = `${cleanedHealthInfo} ${cleanedIllness}`;
 
-      // Get tags from rules for health info
-      const healthInfoRules = this.getTagsFromRules(healthInfoTags);
-      
-      // Get tags from rules for illness
-      const illnessRules = this.getTagsFromRules(illnessTags);
+      // Gọi Python script để dự đoán tags
+      const pythonProcess = spawn('python', [
+        'tag_trainer.py',
+        '--predict',
+        '--text', combinedText,
+        '--model_path', this.modelPath
+      ]);
 
-      // Combine all exclude tags
-      const allExcludeTags = [...healthInfoRules.exclude, ...illnessRules.exclude];
+      let predictedTags = '';
+      let error = '';
 
-      // Combine all recommended tags
-      const allRecommendedTags = [...healthInfoRules.recommend, ...illnessRules.recommend];
+      pythonProcess.stdout.on('data', (data) => {
+        predictedTags += data.toString();
+      });
 
-      return {
-        workout_tags: workoutTags,
-        health_info_tags: [...healthInfoTags, ...allRecommendedTags],
-        illness_tags: allExcludeTags,
-        message: "Successfully analyzed health information"
-      };
+      pythonProcess.stderr.on('data', (data) => {
+        error += data.toString();
+      });
+
+      return new Promise((resolve, reject) => {
+        pythonProcess.on('close', (code) => {
+          if (code !== 0) {
+            reject(new Error(`Python process exited with code ${code}: ${error}`));
+            return;
+          }
+
+          try {
+            const tags = JSON.parse(predictedTags);
+            
+            // Phân loại tags thành các nhóm
+            const workoutTags = tags.filter(tag => 
+              Object.keys(HEALTH_KEYWORDS).includes(tag)
+            );
+            
+            const healthInfoTags = tags.filter(tag => 
+              Object.keys(HEALTH_INFO_KEYWORDS).includes(tag)
+            );
+            
+            const illnessTags = tags.filter(tag => 
+              Object.keys(ILLNESS_KEYWORDS).includes(tag)
+            );
+
+            resolve({
+              workout_tags: workoutTags,
+              health_info_tags: healthInfoTags,
+              illness_tags: illnessTags,
+              message: "Successfully analyzed health information"
+            });
+          } catch (e) {
+            reject(new Error(`Failed to parse Python output: ${e.message}`));
+          }
+        });
+      });
     } catch (error) {
       console.error('Error in analyze_health_info:', error);
       return {
