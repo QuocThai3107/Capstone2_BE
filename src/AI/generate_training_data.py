@@ -164,7 +164,7 @@ def get_exclude_tags(health_info: Dict[str, str], illness: str, recommended_tags
     
     return exclude_tags[:5]  # Giới hạn 5 tag
 
-def generate_training_data(num_samples: int = 2000) -> List[Dict]:
+def generate_training_data(num_samples: int = 10000) -> List[Dict]:
     training_data = []
     
     # Tăng số lượng mẫu cho các trường hợp hiếm
