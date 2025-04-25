@@ -1,0 +1,30 @@
+{
+  "tags": null,
+  "valid_tags": [
+    "Abs",
+    "Back",
+    "Beginner",
+    "Biceps",
+    "Breath Control",
+    "Calves",
+    "Cardio",
+    "Chest",
+    "Core",
+    "Endurance",
+    "Expert",
+    "Fat Burn",
+    "Full Body",
+    "Glutes",
+    "HIIT",
+    "Hamstrings",
+    "Intermediate",
+    "Mobility",
+    "Quads",
+    "Relaxation",
+    "Shoulders",
+    "Strength Training",
+    "Triceps",
+    "Yoga"
+  ],
+  "n_classes": 24
+}

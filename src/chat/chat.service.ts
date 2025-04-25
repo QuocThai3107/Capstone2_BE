@@ -46,6 +46,62 @@ export class ChatService {
     });
   }
 
+  async getAllChatUsers(userId: number) {
+    try {
+      // Lấy tất cả các cuộc trò chuyện có liên quan đến userId
+      const chats = await this.prisma.chat.findMany({
+        where: {
+          OR: [
+            { user_id: userId },
+            { to_user_id: userId }
+          ]
+        },
+        select: {
+          user_id: true,
+          to_user_id: true
+        },
+        distinct: ['user_id', 'to_user_id']
+      });
+
+      // Lọc ra danh sách user_id duy nhất (không bao gồm userId hiện tại)
+      const userIds = new Set<number>();
+      chats.forEach(chat => {
+        if (chat.user_id !== userId) {
+          userIds.add(chat.user_id);
+        }
+        if (chat.to_user_id !== userId) {
+          userIds.add(chat.to_user_id);
+        }
+      });
+
+      // Lấy thông tin chi tiết của các users
+      const users = await this.prisma.user.findMany({
+        where: {
+          user_id: {
+            in: Array.from(userIds)
+          }
+        },
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          email: true,
+          phoneNum: true,
+          imgUrl: true,
+          role_id: true,
+          Status_id: true
+        }
+      });
+
+      return {
+        status: 'success',
+        data: users
+      };
+    } catch (error) {
+      throw new Error('Lỗi khi lấy danh sách người dùng đã chat: ' + error.message);
+    }
+  }
+
   async update(id: number, data: {
     content?: string;
     img_url?: string;

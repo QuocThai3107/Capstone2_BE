@@ -64,26 +64,9 @@ export class UsersService {
     });
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return this.prisma.user.findUnique({
-      where: {
-        user_id: id
-      },
-      select: {
-        user_id: true,
-        username: true,
-        name: true,
-        email: true,
-        phoneNum: true,
-        role_id: true,
-        Status_id: true,
-        imgUrl: true,
-        introduction: true,
-        Health_information: true,
-        illness: true,
-        created_at: true,
-        updated_at: true
-      }
+      where: { user_id: id },
     });
   }
 
@@ -610,5 +593,50 @@ export class UsersService {
     } catch (error) {
       throw error;
     }
+  }
+
+<<<<<<< Updated upstream
+  async getAllPTs() {
+    try {
+      const pts = await this.prisma.user.findMany({
+        where: {
+          role_id: 3
+        },
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          email: true,
+          phoneNum: true,
+          imgUrl: true,
+          introduction: true,
+          gym: true,
+          Status_id: true
+        }
+      });
+
+      return {
+        status: 'success',
+        data: pts
+      };
+    } catch (error) {
+      throw new InternalServerErrorException('Lỗi khi lấy danh sách PT');
     }
+=======
+  // Add missing methods
+  async getPTs() {
+    return this.prisma.user.findMany({
+      where: {
+        role_id: 3 // PT role
+      }
+    });
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({
+      where: { user_id: id },
+      data: updateUserDto
+    });
+>>>>>>> Stashed changes
+  }
 } 

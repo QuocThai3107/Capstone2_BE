@@ -57,12 +57,20 @@ export class ExercisePostService {
       }
     });
   }
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   async updateStatus(id: number, status_id: number) {
     return this.prisma.exercisepost.update({
       where: { exercisepost_id: id },
       data: { status_id }
     });
   }
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   async findOne(id: number) {
     return this.prisma.exercisepost.findUnique({
       where: { exercisepost_id: id },
@@ -128,6 +136,175 @@ export class ExercisePostService {
   }
 
   async getAllTags() {
+<<<<<<< Updated upstream
     return this.prisma.tag.findMany();
+=======
+    try {
+      const tags = await this.prisma.tag.findMany({
+        select: {
+          tag_id: true,
+          tag_name: true
+        }
+      });
+
+      return {
+        status: 'success',
+        data: tags
+      };
+    } catch (error) {
+      console.error('Error getting all tags:', error);
+      throw new Error('Có lỗi khi lấy danh sách tags');
+    }
+  }
+
+  async search(searchParams: { tags: string[], name?: string, description?: string }) {
+    try {
+      const where: any = {};
+      
+      // Xử lý tìm kiếm theo tags
+      if (searchParams.tags.length > 0) {
+        where.AND = searchParams.tags.map(tagId => ({
+          exerciseposttag: {
+            some: {
+              tag_id: parseInt(tagId)
+            }
+          }
+        }));
+      }
+
+      // Tìm kiếm theo tên
+      if (searchParams.name) {
+        where.name = {
+          contains: searchParams.name.toLowerCase()
+        };
+      }
+
+      // Tìm kiếm theo mô tả
+      if (searchParams.description) {
+        where.description = {
+          contains: searchParams.description.toLowerCase()
+        };
+      }
+
+      const exercises = await this.prisma.exercisepost.findMany({
+        where,
+        include: {
+          step: true,
+          exerciseposttag: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      });
+
+      return {
+        status: 'success',
+        data: exercises.map(exercise => ({
+          exercisepost_id: exercise.exercisepost_id,
+          name: exercise.name,
+          description: exercise.description,
+          img_url: exercise.img_url,
+          video_rul: exercise.video_rul,
+          steps: exercise.step,
+          tags: exercise.exerciseposttag.map(tag => ({
+            tag_id: tag.tag.tag_id,
+            tag_name: tag.tag.tag_name
+          }))
+        }))
+      };
+    } catch (error) {
+      console.error('Error searching exercises:', error);
+      throw new Error('Có lỗi khi tìm kiếm bài tập');
+    }
+  }
+
+  async findByTags(tagIds: number[]) {
+    try {
+      const exercises = await this.prisma.exercisepost.findMany({
+        where: {
+          AND: tagIds.map(tagId => ({
+            exerciseposttag: {
+              some: {
+                tag_id: tagId
+              }
+            }
+          }))
+        },
+        include: {
+          step: true,
+          exerciseposttag: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      });
+
+      return {
+        status: 'success',
+        data: exercises.map(exercise => ({
+          exercisepost_id: exercise.exercisepost_id,
+          name: exercise.name,
+          description: exercise.description,
+          img_url: exercise.img_url,
+          video_rul: exercise.video_rul,
+          steps: exercise.step,
+          tags: exercise.exerciseposttag.map(tag => ({
+            tag_id: tag.tag.tag_id,
+            tag_name: tag.tag.tag_name
+          }))
+        }))
+      };
+    } catch (error) {
+      console.error('Error finding exercises by tags:', error);
+      throw new Error('Có lỗi khi tìm bài tập theo tags');
+    }
+  }
+
+  async searchByTags(includeTags: string[], excludeTags: string[]) {
+    const exercisePosts = await this.prisma.exercisepost.findMany({
+      where: {
+        AND: [
+          // Include condition: At least one tag matches
+          includeTags.length > 0 ? {
+            exerciseposttag: {
+              some: {
+                tag: {
+                  tag_name: {
+                    in: includeTags
+                  }
+                }
+              }
+            }
+          } : {},
+          // Exclude condition: None of the tags match
+          excludeTags.length > 0 ? {
+            NOT: {
+              exerciseposttag: {
+                some: {
+                  tag: {
+                    tag_name: {
+                      in: excludeTags
+                    }
+                  }
+                }
+              }
+            }
+          } : {}
+        ]
+      },
+      include: {
+        step: true,
+        exerciseposttag: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    });
+
+    return exercisePosts;
+>>>>>>> Stashed changes
   }
 } 

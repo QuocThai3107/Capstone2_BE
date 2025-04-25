@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { chat } from '@prisma/client';
+import { Public } from '../auth/decorator';
 
 @Controller('chat')
 export class ChatController {
@@ -16,14 +17,10 @@ export class ChatController {
     return this.chatService.create(createChatDto);
   }
 
-  @Get()
-  findAll() {
-    return this.chatService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.chatService.findOne(+id);
+  @Public()
+  @Get('users/:userId/chat-users')
+  async getAllChatUsers(@Param('userId') userId: string) {
+    return this.chatService.getAllChatUsers(+userId);
   }
 
   @Get('users/:userId/contacts')
@@ -37,6 +34,16 @@ export class ChatController {
     @Param('toUserId') toUserId: string,
   ) {
     return this.chatService.findByUsers(+userId, +toUserId);
+  }
+
+  @Get()
+  findAll() {
+    return this.chatService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.chatService.findOne(+id);
   }
 
   @Patch(':id')
@@ -54,5 +61,4 @@ export class ChatController {
   remove(@Param('id') id: string) {
     return this.chatService.remove(+id);
   }
-
 } 
