@@ -19,6 +19,7 @@ from tensorflow.keras.regularizers import l1_l2
 from sklearn.metrics import precision_score, recall_score, roc_auc_score
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from flask import Flask, request, jsonify
+import re
 
 class FocalLoss(tf.keras.losses.Loss):
     def __init__(self, gamma=2.0, alpha=0.25, reduction=tf.keras.losses.Reduction.AUTO, name='focal_loss'):
@@ -203,24 +204,89 @@ class TagTrainerV5:
         
         return domain_features
 
-    def extract_all_features(self, health_info):
-        """Trích xuất tất cả features từ health_info"""
-        # Parse health info
-        basic_features = self.parse_health_info(health_info)
+    def extract_all_features(self, health_info_str):
+        """Trích xuất tất cả các features từ health info string"""
+        features = {}
         
-        # Tạo các loại features khác
-        interaction_features = self.create_interaction_features(basic_features)
-        categorical_features = self.encode_categorical_features(basic_features)
-        domain_features = self.create_domain_features(basic_features)
-        
-        # Kết hợp tất cả features
-        all_features = {}
-        all_features.update(basic_features)
-        all_features.update(interaction_features)
-        all_features.update(categorical_features)
-        all_features.update(domain_features)
-        
-        return all_features
+        try:
+            # Parse health info string
+            parts = health_info_str.split(',')
+            for part in parts:
+                if ':' in part:
+                    key, value = part.split(':', 1)  # Split only on first occurrence
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Xử lý BMI
+                    if key == 'BMI':
+                        try:
+                            bmi = float(value.split()[0])  # Lấy số đầu tiên
+                            features['bmi'] = bmi
+                            # Set BMI status
+                            features['is_underweight'] = 1 if bmi < 18.5 else 0
+                            features['is_normal'] = 1 if 18.5 <= bmi < 25 else 0
+                            features['is_overweight'] = 1 if 25 <= bmi < 30 else 0
+                            features['is_obese'] = 1 if bmi >= 30 else 0
+                        except ValueError:
+                            features['bmi'] = 0.0
+                            features['is_underweight'] = 0
+                            features['is_normal'] = 0
+                            features['is_overweight'] = 0
+                            features['is_obese'] = 0
+                    
+                    # Xử lý Height và Weight
+                    elif key in ['Height', 'Weight']:
+                        try:
+                            value = float(value.replace('cm', '').replace('kg', '').strip())
+                            features[key.lower()] = value
+                        except ValueError:
+                            features[key.lower()] = 0.0
+                    
+                    # Xử lý Status
+                    elif key == 'Status':
+                        status = value.lower()
+                        features['is_underweight'] = 1 if status == 'underweight' else 0
+                        features['is_normal'] = 1 if status == 'normal' else 0
+                        features['is_overweight'] = 1 if status == 'overweight' else 0
+                        features['is_obese'] = 1 if status == 'obese' else 0
+                    
+                    # Xử lý Health Tags
+                    elif key == 'Health Tags':
+                        tags = [tag.strip() for tag in value.split(',')]
+                        for tag in self.valid_tags:
+                            features[f'has_tag_{tag}'] = 1 if tag in tags else 0
+            
+            # Đảm bảo tất cả các features cần thiết đều có mặt
+            required_features = [
+                'bmi', 'is_underweight', 'is_normal', 'is_overweight', 'is_obese'
+            ]
+            
+            # Thêm các features còn thiếu với giá trị mặc định
+            for feature in required_features:
+                if feature not in features:
+                    features[feature] = 0
+                    
+            # Thêm các tag features còn thiếu
+            for tag in self.valid_tags:
+                tag_feature = f'has_tag_{tag}'
+                if tag_feature not in features:
+                    features[tag_feature] = 0
+            
+            return features
+            
+        except Exception as e:
+            print(f"Error parsing health info: {e}")
+            # Trả về features mặc định nếu có lỗi
+            default_features = {
+                'bmi': 0.0,
+                'is_underweight': 0,
+                'is_normal': 0,
+                'is_overweight': 0,
+                'is_obese': 0
+            }
+            for tag in self.valid_tags:
+                default_features[f'has_tag_{tag}'] = 0
+            return default_features
 
     def build_hybrid_model(self, text_input_dim, feature_input_dim, n_classes):
         """Xây dựng model kết hợp cả text và features"""
@@ -657,41 +723,106 @@ def predict_from_health():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'Invalid JSON data'}), 400
+            return jsonify({
+                'recommended_tags': [],
+                'exclude_tags': []
+            })
             
-        health_info = data.get('healthInfo')  # Thay đổi từ health_info thành healthInfo
-        if not health_info:
-            return jsonify({'error': 'Missing healthInfo parameter'}), 400
+        health_info = data.get('healthInfo')
+        illness = data.get('illness', 'none')
+        
+        # Nếu không có healthInfo và illness, trả về mảng rỗng
+        if not health_info and illness == 'none':
+            return jsonify({
+                'recommended_tags': [],
+                'exclude_tags': []
+            })
             
-        # Trích xuất features từ health info
-        features = trainer.extract_all_features(health_info)
+        print("Received health_info:", health_info)
+        print("Received illness:", illness)
         
-        # Chuyển đổi features thành vector
-        feature_vector = []
-        for key in sorted(features.keys()):
-            if isinstance(features[key], (int, float)):
-                feature_vector.append(features[key])
-            elif isinstance(features[key], bool):
-                feature_vector.append(1 if features[key] else 0)
+        recommended_tags = []
+        exclude_tags = []
         
-        feature_vector = np.array(feature_vector).reshape(1, -1)
+        # Xử lý exclude tags dựa trên illness
+        if illness and illness != 'none':
+            # Mapping giữa illness và tags cần tránh
+            illness_exclude_map = {
+                'knee_pain': ['HIIT', 'Jumping', 'Squats', 'Running', 'Plyometrics'],
+                'leg_pain': ['HIIT', 'Jumping', 'Squats', 'Running', 'Plyometrics'],
+                'back_pain': ['Deadlifts', 'Heavy Lifting', 'Twisting', 'Core'],
+                'shoulder_injury': ['Overhead Press', 'Pull-ups', 'Push-ups', 'Shoulders'],
+                'wrist_injury': ['Push-ups', 'Planks', 'Handstands', 'Biceps', 'Triceps'],
+                'ankle_sprain': ['Running', 'Jumping', 'Plyometrics', 'Calves'],
+                'asthma': ['HIIT', 'Long Distance Running', 'High Intensity', 'Cardio'],
+                'chest_pain': ['High Intensity', 'Heavy Lifting', 'HIIT', 'Chest']
+            }
+            
+            # Xử lý nhiều illness được phân tách bằng dấu phẩy
+            illnesses = [i.strip() for i in illness.split(',')]
+            for i in illnesses:
+                if i in illness_exclude_map:
+                    exclude_tags.extend(illness_exclude_map[i])
         
-        # Chuẩn hóa features
-        feature_vector = trainer.feature_scaler.transform(feature_vector)
+        # Nếu có healthInfo, thực hiện dự đoán tags
+        if health_info:
+            # Trích xuất features từ health info
+            features = trainer.extract_all_features(health_info)
+            print("Extracted features:", features)
+            
+            # Chuyển đổi features thành vector
+            feature_vector = []
+            for key in sorted(features.keys()):
+                if isinstance(features[key], (int, float)):
+                    feature_vector.append(features[key])
+                elif isinstance(features[key], bool):
+                    feature_vector.append(1 if features[key] else 0)
+            
+            print("Feature vector:", feature_vector)
+            
+            feature_vector = np.array(feature_vector).reshape(1, -1)
+            
+            # Chuẩn hóa features
+            feature_vector = trainer.feature_scaler.transform(feature_vector)
+            
+            # Dự đoán tags
+            recommend_predictions = trainer.recommend_model.predict([np.zeros((1, 1000)), feature_vector])[0]
+            exclude_predictions = trainer.exclude_model.predict([np.zeros((1, 1000)), feature_vector])[0]
+            
+            print("Recommend predictions:", recommend_predictions)
+            print("Exclude predictions:", exclude_predictions)
+            
+            # Lấy top recommended tags với ngưỡng thấp hơn
+            recommend_indices = np.argsort(recommend_predictions)[::-1][:10]
+            for i in recommend_indices:
+                # Tính điểm dựa trên cả recommend và exclude
+                score = recommend_predictions[i] * (1 - exclude_predictions[i])
+                if score > 0.2:  # Hạ ngưỡng xuống 0.2
+                    recommended_tags.append(trainer.valid_tags[i])
+            
+            # Thêm các tags có xác suất exclude cao từ model
+            exclude_indices = np.argsort(exclude_predictions)[::-1][:5]
+            for i in exclude_indices:
+                if exclude_predictions[i] > 0.3 and trainer.valid_tags[i] not in exclude_tags:
+                    exclude_tags.append(trainer.valid_tags[i])
         
-        # Dự đoán tags
-        predictions = trainer.recommend_model.predict([np.zeros((1, 1000)), feature_vector])[0]
+        # Loại bỏ các tags trùng lặp
+        exclude_tags = list(set(exclude_tags))
         
-        # Lấy top tags
-        top_indices = np.argsort(predictions)[::-1][:10]
-        recommended_tags = [trainer.valid_tags[i] for i in top_indices if predictions[i] > 0.5]
+        print("Recommended tags:", recommended_tags)
+        print("Exclude tags:", exclude_tags)
         
         return jsonify({
-            'recommended_tags': recommended_tags
+            'recommended_tags': recommended_tags,
+            'exclude_tags': exclude_tags
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print("Error in predict_from_health:", str(e))
+        return jsonify({
+            'recommended_tags': [],
+            'exclude_tags': []
+        })
 
 if __name__ == '__main__':
     # Load model khi khởi động
