@@ -40,10 +40,10 @@ export class TagService {
         text: text
       });
 
-      if (response.data.status === 'success') {
+      if (response.data && response.data.recommended_tags) {
         return {
-          recommendTags: response.data.data.recommended_tags || [],
-          excludeTags: response.data.data.exclude_tags || []
+          recommendTags: response.data.recommended_tags,
+          excludeTags: response.data.exclude_tags || []
         };
       } else {
         // Fallback nếu API không hoạt động
@@ -70,10 +70,11 @@ export class TagService {
         illness: illness
       });
 
-      if (response.data.status === 'success') {
+      // Kiểm tra response trực tiếp từ Python API
+      if (response.data && response.data.recommended_tags) {
         return {
-          recommendTags: response.data.data.recommended_tags || [],
-          excludeTags: response.data.data.exclude_tags || []
+          recommendTags: response.data.recommended_tags,
+          excludeTags: response.data.exclude_tags || []
         };
       } else {
         // Fallback nếu API không hoạt động
@@ -88,32 +89,49 @@ export class TagService {
 
   // Phương thức fallback khi API không hoạt động
   private fallbackPredictTagsFromHealthInfo(healthInfo: string, illness: string) {
-    // Parse health info để lấy Experience_Level
-    const experienceLevel = healthInfo.split(',').find(info => info.includes('Experience_Level'))?.split(':')[1];
-    
-    // Đảm bảo luôn có ít nhất 1 tag về độ khó
-    const difficultyTags = ['Beginner', 'Intermediate', 'Expert'];
     let recommendTags = [];
+    let excludeTags = [];
     
-    // Thêm tag độ khó dựa vào Experience_Level
-    if (experienceLevel) {
-      recommendTags.push(experienceLevel);
-    } else {
-      // Nếu không có Experience_Level, mặc định là Beginner
-      recommendTags.push('Beginner');
+    // Xử lý illness trước
+    if (illness && illness !== 'none') {
+      const illnesses = illness.split(',').map(i => i.trim());
+      
+      // Xác định các tag nên tránh dựa vào illness
+      for (const ill of illnesses) {
+        if (ill === 'knee_pain' || ill === 'leg_pain') {
+          excludeTags = [...excludeTags, 'HIIT', 'Jumping', 'Squats', 'Running', 'Plyometrics'];
+          recommendTags = [...recommendTags, 'Mobility', 'Stretching', 'Low Impact'];
+        } else if (ill === 'back_pain') {
+          excludeTags = [...excludeTags, 'Deadlifts', 'Heavy Lifting', 'Twisting'];
+          recommendTags = [...recommendTags, 'Core', 'Stability', 'Posture'];
+        } else if (ill === 'shoulder_injury') {
+          excludeTags = [...excludeTags, 'Overhead Press', 'Pull-ups', 'Push-ups'];
+          recommendTags = [...recommendTags, 'Mobility', 'Range of Motion'];
+        } else if (ill === 'wrist_injury') {
+          excludeTags = [...excludeTags, 'Push-ups', 'Planks', 'Handstands'];
+          recommendTags = [...recommendTags, 'Mobility', 'Flexibility'];
+        } else if (ill === 'ankle_sprain') {
+          excludeTags = [...excludeTags, 'Running', 'Jumping', 'Plyometrics'];
+          recommendTags = [...recommendTags, 'Balance', 'Stability'];
+        } else if (ill === 'asthma') {
+          excludeTags = [...excludeTags, 'HIIT', 'Long Distance Running', 'High Intensity'];
+          recommendTags = [...recommendTags, 'Breathing', 'Low Intensity'];
+        } else if (ill === 'chest_pain') {
+          excludeTags = [...excludeTags, 'High Intensity', 'Heavy Lifting', 'HIIT'];
+          recommendTags = [...recommendTags, 'Breathing', 'Light Cardio'];
+        }
+      }
     }
     
-    // Thêm các tag khác dựa vào illness
-    if (illness === 'none') {
-      recommendTags = [...recommendTags, 'Cardio', 'Strength Training'];
-    } else {
-      recommendTags = [...recommendTags, 'Mobility', 'Relaxation'];
+    // Nếu không có illness hoặc không có tag nào được thêm vào
+    if (recommendTags.length === 0) {
+      recommendTags = ['Cardio', 'Strength Training', 'Flexibility'];
     }
     
-    const excludeTags = illness === 'none'
-      ? ['Relaxation']
-      : ['Strength Training'];
-
+    // Loại bỏ các tag trùng lặp
+    recommendTags = [...new Set(recommendTags)];
+    excludeTags = [...new Set(excludeTags)];
+    
     return {
       recommendTags,
       excludeTags

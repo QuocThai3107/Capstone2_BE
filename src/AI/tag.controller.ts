@@ -6,7 +6,7 @@ import { HealthAnalyzerService, HealthAnalysisResponse } from './health-analyzer
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Request } from 'express';
 import axios from 'axios';
-import { GetUser } from '../auth/decorator';
+import { GetUser, Public } from '../auth/decorator';
 
 @Controller('tags')
 export class TagController {
@@ -64,6 +64,7 @@ export class TagController {
     );
   }
 
+  @Public()
   @Get('health-analysis/:userId')
   async analyzeUserHealth(@Param('userId') userId: string) {
     try {
