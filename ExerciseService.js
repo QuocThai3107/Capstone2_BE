@@ -1,132 +1,189 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000';
-const EXERCISE_POST_URL = `${BASE_URL}/exercise-post`;
-const TAG_URL = `${BASE_URL}/exercise-post-tag/tag`;
+const API_URL = 'http://localhost:3000/exercise-post';
 
 class ExerciseService {
-  // CRUD cơ bản cho ExercisePost
-  
+  constructor() {
+    axios.interceptors.request.use(
+      config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      error => {
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  getAuthHeader() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
+  }
+
   // Lấy tất cả bài tập
   async getAll() {
-    return axios.get(EXERCISE_POST_URL);
+    return axios.get(API_URL);
   }
 
-  // Tìm bài tập theo tên tag (chỉ lấy bài tập có tag A và KHÔNG có tag B)
-  async searchByTagNames(includeTags = [], excludeTags = []) {
-    try {
-      const response = await axios.get(`${EXERCISE_POST_URL}/search/bytags`, {
-        params: { 
-          includeTags: includeTags.join(','),
-          excludeTags: excludeTags.join(','),
-          strict: true // Thêm flag để backend biết là cần lọc nghiêm ngặt
-        }
+  // Alias for getAll() to maintain compatibility
+  async getAllExercisePosts() {
+    return this.getAll();
+  }
+
+  async createExercisePost(data, file) {
+    const formData = new FormData();
+    
+    if (data.name) formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    
+    // Xử lý tagIds
+    if (data.tagIds && Array.isArray(data.tagIds)) {
+      data.tagIds.forEach((tagId, index) => {
+        // Chuyển tagId thành số nếu là chuỗi
+        const numericTagId = typeof tagId === 'string' ? parseInt(tagId) : tagId;
+        formData.append(`tagIds[${index}]`, numericTagId);
       });
-      return response.data;
-    } catch (error) {
-      console.error('Error searching exercises by tag names:', error);
-      throw error;
     }
+    
+    // Xử lý steps
+    if (data.steps && Array.isArray(data.steps)) {
+      data.steps.forEach((step, index) => {
+        Object.keys(step).forEach(key => {
+          formData.append(`steps[${index}][${key}]`, step[key] === null ? '' : step[key]);
+        });
+      });
+    }
+    
+    // Quan trọng: Đảm bảo tên file đúng với tên trong FileInterceptor (image)
+    if (file) {
+      formData.append('image', file);
+    }
+    
+    if (data.video_rul) {
+      formData.append('video_rul', data.video_rul);
+    }
+    
+    // QUAN TRỌNG: Phải truyền user_id từ dữ liệu, KHÔNG được mặc định là 1
+    if (data.user_id) {
+      formData.append('user_id', data.user_id);
+    }
+    
+    // Debug
+    console.log("FormData entries for create:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + (pair[1] instanceof File ? 'File: ' + pair[1].name : pair[1]));
+    }
+    
+    return axios.post(API_URL, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...this.getAuthHeader()
+      }
+    });
   }
 
-  // Lấy chi tiết một bài tập theo ID
+  // Alias for getExercisePostById to maintain compatibility
   async getById(id) {
-    return axios.get(`${EXERCISE_POST_URL}/${id}`);
+    return this.getExercisePostById(id);
   }
 
-  // Tạo bài tập mới
-  async create(exerciseData) {
+  async getExercisePostById(id) {
+    return axios.get(`${API_URL}/${id}`);
+  }
+
+  async updateExercisePost(id, data, file) {
     const formData = new FormData();
     
-    // Thêm thông tin cơ bản
-    formData.append('name', exerciseData.name);
-    formData.append('description', exerciseData.description);
-    formData.append('user_id', exerciseData.user_id);
+    if (data.name) formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
     
-    if (exerciseData.video_rul) {
-      formData.append('video_rul', exerciseData.video_rul);
-    }
-    
-    // Thêm ảnh nếu có
-    if (exerciseData.imgFile) {
-      formData.append('imgUrl', exerciseData.imgFile);
-    }
-    
-    // Thêm tags nếu có
-    if (exerciseData.tagIds && exerciseData.tagIds.length > 0) {
-      exerciseData.tagIds.forEach(tagId => {
-        formData.append('tagIds', tagId);
+    // Xử lý tagIds
+    if (data.tagIds && Array.isArray(data.tagIds)) {
+      data.tagIds.forEach((tagId, index) => {
+        // Chuyển tagId thành số nếu là chuỗi
+        const numericTagId = typeof tagId === 'string' ? parseInt(tagId) : tagId;
+        formData.append(`tagIds[${index}]`, numericTagId);
       });
     }
     
-    // Thêm steps nếu có
-    if (exerciseData.steps && exerciseData.steps.length > 0) {
-      exerciseData.steps.forEach((step, index) => {
-        formData.append(`steps[${index}][stepNumber]`, step.stepNumber);
-        formData.append(`steps[${index}][instruction]`, step.instruction);
-        if (step.imgUrl) {
-          formData.append(`steps[${index}][imgUrl]`, step.imgUrl);
-        }
+    // Xử lý steps
+    if (data.steps && Array.isArray(data.steps)) {
+      data.steps.forEach((step, index) => {
+        Object.keys(step).forEach(key => {
+          formData.append(`steps[${index}][${key}]`, step[key] === null ? '' : step[key]);
+        });
       });
     }
     
-    return axios.post(EXERCISE_POST_URL, formData, {
-      headers: {'Content-Type': 'multipart/form-data'}
+    // Quan trọng: Đảm bảo tên file đúng với tên trong FileInterceptor (image)
+    if (file) {
+      formData.append('image', file);
+    }
+    
+    if (data.video_rul) {
+      formData.append('video_rul', data.video_rul);
+    }
+    
+    // Truyền user_id nếu có
+    if (data.user_id) {
+      formData.append('user_id', data.user_id);
+    }
+    
+    // Luôn gán status_id mặc định là 1 khi update exercise
+    formData.append('status_id', data.status_id || '1');
+    
+    // Để debug
+    console.log("FormData entries for update:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + (pair[1] instanceof File ? 'File: ' + pair[1].name : pair[1]));
+    }
+    
+    return axios.patch(`${API_URL}/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...this.getAuthHeader()
+      }
     });
   }
-
-  // Cập nhật bài tập
-  async update(id, updateData) {
-    const formData = new FormData();
-    
-    // Thêm các trường cần cập nhật
-    if (updateData.name) formData.append('name', updateData.name);
-    if (updateData.description) formData.append('description', updateData.description);
-    if (updateData.video_rul) formData.append('video_rul', updateData.video_rul);
-    
-    // Thêm ảnh mới nếu có
-    if (updateData.imgFile) {
-      formData.append('imgUrl', updateData.imgFile);
-    }
-    
-    // Thêm tags mới nếu có
-    if (updateData.tagIds && updateData.tagIds.length > 0) {
-      updateData.tagIds.forEach(tagId => {
-        formData.append('tagIds', tagId);
-      });
-    }
-    
-    // Thêm steps mới nếu có
-    if (updateData.steps && updateData.steps.length > 0) {
-      updateData.steps.forEach((step, index) => {
-        formData.append(`steps[${index}][stepNumber]`, step.stepNumber);
-        formData.append(`steps[${index}][instruction]`, step.instruction);
-        if (step.imgUrl) {
-          formData.append(`steps[${index}][imgUrl]`, step.imgUrl);
-        }
-      });
-    }
-    
-    return axios.patch(`${EXERCISE_POST_URL}/${id}`, formData, {
-      headers: {'Content-Type': 'multipart/form-data'}
-    });
-  }
-
-  // Xóa bài tập
-  async delete(id) {
-    return axios.delete(`${EXERCISE_POST_URL}/${id}`);
-  }
-
-  // Thao tác với Tags
   
-  // Lấy tất cả tags
+  async updateExercisePostStatus(id, status_id) {
+    return axios.patch(`${API_URL}/${id}/status`, { status_id }, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader()
+      }
+    });
+  }
+
+  async deleteExercisePost(id) {
+    return axios.delete(`${API_URL}/${id}`);
+  }
+
   async getAllTags() {
-    return axios.get(TAG_URL);
-  }
-  
-  // Tạo tag mới
-  async createTag(tagName) {
-    return axios.post(TAG_URL, { tag_name: tagName });
+    try {
+      const response = await axios.get(`${API_URL}/tag/tag`);
+      console.log("getAllTags response:", response.data);
+      return response;
+    } catch (error) {
+      console.error("Error in getAllTags:", error);
+      // Nếu API gốc lỗi, thử API thay thế
+      try {
+        console.log("Trying alternative tag API endpoint");
+        const altResponse = await axios.get(`${API_URL}/tag`);
+        console.log("Alternative tag API response:", altResponse.data);
+        return altResponse;
+      } catch (altError) {
+        console.error("Error in alternative tag API:", altError);
+        // Trả về một đối tượng với mảng rỗng để tránh lỗi
+        return { data: [] };
+      }
+    }
   }
 }
 

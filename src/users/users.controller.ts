@@ -24,9 +24,9 @@ interface HealthAnalyzerResponse {
 
 @Controller('users')
 export class UsersController {
-
-  constructor(private readonly usersService: UsersService) {
-  }
+  constructor(
+    private readonly usersService: UsersService
+  ) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -44,10 +44,30 @@ export class UsersController {
   }
 
   @Get('pt')
-  getPTs() {
-    return this.usersService.getPTs();
+  getAllPTs() {
+    return this.usersService.getAllPTs();
   }
 
+  @Public()
+  @Get('gym/pts')
+  getPTsByGym() {
+    return this.usersService.getPTsByGym();
+  }
+
+  @Public()
+  @Get('pt/pending')
+  getPendingPTs() {
+    try {
+      return this.usersService.getPendingPTs();
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
+  }
+
+  @Public()
   @Get('pt/:id')
   getPTDetail(@Param('id') id: string) {
     return this.usersService.getPTDetail(+id);
@@ -65,148 +85,17 @@ export class UsersController {
     return this.usersService.getPTProfile(userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
-  }
-
-  @Public()
-  @Get('gym/pts')
-  async getPTsByGym() {
-    return this.usersService.getPTsByGym();
-  }
-
-  @Public()
-  @Get('pt/pending')
-  @UseGuards(JwtAuthGuard)
-  async getPendingPTs() {
-    try {
-      const result = await this.usersService.getPendingPTs();
-      return {
-        status: 'success',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
-
   @Public()
   @Get('public/:id')
-  async getPublicProfile(@Param('id') id: string) {
+  getPublicProfile(@Param('id') id: string) {
     return this.usersService.getPublicProfile(+id);
   }
 
-<<<<<<< Updated upstream
-=======
-  @Get('profile/me/health-analysis')
-  @UseGuards(JwtAuthGuard)
-  async analyzeMyHealth(@GetUser('user_id') userId: number) {
-    try {
-      if (!userId) {
-        return {
-          status: 'error',
-          message: 'User ID not found in token'
-        };
-      }
-
-      const user = await this.usersService.getProfile(userId);
-      
-      if (!user) {
-        return {
-          status: 'error',
-          message: 'Không tìm thấy thông tin người dùng'
-        };
-      }
-
-      const analysis = await this.healthAnalyzer.analyze_health_info(
-        user.data.Health_information || '',
-        user.data.illness || ''
-      ) as HealthAnalyzerResponse;
-
-      // Chuyển đổi dữ liệu từ HealthAnalyzerResponse sang HealthAnalysisResponse
-      const convertedAnalysis: HealthAnalysisResponse = {
-        recommended_tags: [...analysis.workout_tags, ...analysis.health_info_tags],
-        exclude_tags: analysis.illness_tags,
-        message: analysis.message
-      };
-
-      return {
-        status: 'success',
-        data: {
-          userId: user.data.user_id,
-          healthInfo: user.data.Health_information,
-          illness: user.data.illness,
-          recommended_tags: convertedAnalysis.recommended_tags || [],
-          exclude_tags: convertedAnalysis.exclude_tags || [],
-          message: convertedAnalysis.message || ''
-        }
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
-
->>>>>>> Stashed changes
-  @Public()
-  @Get('pt/pending')
-  async getPendingPTs() {
-    try {
-      const result = await this.usersService.getPendingPTs();
-      return {
-        status: 'success',
-        data: result
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error.message
-      };
-    }
-  }
-
-<<<<<<< Updated upstream
-  @Public()
-  @Get('pt/:id')
-  async getPTDetail(@Param('id') id: string) {
-    return this.usersService.getPTDetail(+id);
-  }
-
-  @Get('profile/me')
-  @UseGuards(JwtAuthGuard)
-  async getMyProfile(@GetUser('user_id') userId: number) {
-    return this.usersService.getProfile(userId);
-  }
-
-  @Get('profile/pt/me')
-  @UseGuards(JwtAuthGuard)
-  async getMyPTProfile(@GetUser('user_id') userId: number) {
-    return this.usersService.getPTProfile(userId);
-  }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
 
-=======
->>>>>>> Stashed changes
   @Patch('profile/:id')
   @UseInterceptors(FileInterceptor('image'))
   updateProfile(
@@ -225,12 +114,9 @@ export class UsersController {
   ) {
     return this.usersService.updateAdmin(+id, updateUserAdminDto);
   }
-<<<<<<< Updated upstream
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
-=======
->>>>>>> Stashed changes
 }

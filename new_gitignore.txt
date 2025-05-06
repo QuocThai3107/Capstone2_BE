@@ -136,4 +136,4 @@ checkpoints/
 keras/
 venv/
 keras_env/
-tag_model/
+tag_model/ 

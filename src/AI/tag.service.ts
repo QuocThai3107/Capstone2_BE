@@ -15,11 +15,12 @@ export class TagService {
 
   private loadTags() {
     try {
-      const tagsPath = path.join(process.cwd(), 'tag_model', 'tags.json');
+      const tagsPath = path.join(process.cwd(), 'tag_model', 'tags_info.json');
       const tagsInfoPath = path.join(process.cwd(), 'tag_model', 'tags_info.json');
       
-      this.tags = JSON.parse(fs.readFileSync(tagsPath, 'utf8'));
-      this.tagsInfo = JSON.parse(fs.readFileSync(tagsInfoPath, 'utf8'));
+      const tagsData = JSON.parse(fs.readFileSync(tagsPath, 'utf8'));
+      this.tags = tagsData.valid_tags || [];
+      this.tagsInfo = tagsData;
     } catch (error) {
       console.error('Error loading tags:', error);
       this.tags = ['cardio', 'strength', 'flexibility', 'balance', 'endurance'];
@@ -64,20 +65,31 @@ export class TagService {
 
   async predictTagsFromHealthInfo(healthInfo: string, illness: string) {
     try {
+      console.log('Calling Python API with healthInfo:', healthInfo, 'illness:', illness);
+      
       // Gọi API Python để dự đoán tags từ thông tin sức khỏe
       const response = await axios.post(`${this.pythonApiUrl}/predict-from-health`, {
         healthInfo: healthInfo,
         illness: illness
       });
 
-      // Kiểm tra response trực tiếp từ Python API
-      if (response.data && response.data.recommended_tags) {
+      console.log('Response from Python API:', JSON.stringify(response.data, null, 2));
+
+      // Kiểm tra response từ Python API với định dạng mới
+      if (response.data && response.data.status === 'success' && response.data.data) {
+        // Truy cập đúng các trường trong data
+        const recommendTags = response.data.data.recommendTags || [];
+        const excludeTags = response.data.data.excludeTags || [];
+        
+        console.log('Extracted tags:', { recommendTags, excludeTags });
+        
         return {
-          recommendTags: response.data.recommended_tags,
-          excludeTags: response.data.exclude_tags || []
+          recommendTags,
+          excludeTags
         };
       } else {
-        // Fallback nếu API không hoạt động
+        console.log('API response format not as expected, using fallback');
+        // Fallback nếu API không hoạt động đúng format
         return this.fallbackPredictTagsFromHealthInfo(healthInfo, illness);
       }
     } catch (error) {
@@ -131,6 +143,8 @@ export class TagService {
     // Loại bỏ các tag trùng lặp
     recommendTags = [...new Set(recommendTags)];
     excludeTags = [...new Set(excludeTags)];
+    
+    console.log('Using fallback method, returning:', { recommendTags, excludeTags });
     
     return {
       recommendTags,

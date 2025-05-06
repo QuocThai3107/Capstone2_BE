@@ -595,7 +595,6 @@ export class UsersService {
     }
   }
 
-<<<<<<< Updated upstream
   async getAllPTs() {
     try {
       const pts = await this.prisma.user.findMany({
@@ -622,14 +621,6 @@ export class UsersService {
     } catch (error) {
       throw new InternalServerErrorException('Lỗi khi lấy danh sách PT');
     }
-=======
-  // Add missing methods
-  async getPTs() {
-    return this.prisma.user.findMany({
-      where: {
-        role_id: 3 // PT role
-      }
-    });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
@@ -637,6 +628,5 @@ export class UsersService {
       where: { user_id: id },
       data: updateUserDto
     });
->>>>>>> Stashed changes
   }
 } 

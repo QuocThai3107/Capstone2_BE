@@ -766,26 +766,26 @@ def predict_from_health():
         
         # Nếu có healthInfo, thực hiện dự đoán tags
         if health_info:
-            # Trích xuất features từ health info
-            features = trainer.extract_all_features(health_info)
+        # Trích xuất features từ health info
+        features = trainer.extract_all_features(health_info)
             print("Extracted features:", features)
-            
-            # Chuyển đổi features thành vector
-            feature_vector = []
-            for key in sorted(features.keys()):
-                if isinstance(features[key], (int, float)):
-                    feature_vector.append(features[key])
-                elif isinstance(features[key], bool):
-                    feature_vector.append(1 if features[key] else 0)
-            
+        
+        # Chuyển đổi features thành vector
+        feature_vector = []
+        for key in sorted(features.keys()):
+            if isinstance(features[key], (int, float)):
+                feature_vector.append(features[key])
+            elif isinstance(features[key], bool):
+                feature_vector.append(1 if features[key] else 0)
+        
             print("Feature vector:", feature_vector)
             
-            feature_vector = np.array(feature_vector).reshape(1, -1)
-            
-            # Chuẩn hóa features
-            feature_vector = trainer.feature_scaler.transform(feature_vector)
-            
-            # Dự đoán tags
+        feature_vector = np.array(feature_vector).reshape(1, -1)
+        
+        # Chuẩn hóa features
+        feature_vector = trainer.feature_scaler.transform(feature_vector)
+        
+        # Dự đoán tags
             recommend_predictions = trainer.recommend_model.predict([np.zeros((1, 1000)), feature_vector])[0]
             exclude_predictions = trainer.exclude_model.predict([np.zeros((1, 1000)), feature_vector])[0]
             

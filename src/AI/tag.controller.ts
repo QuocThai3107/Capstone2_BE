@@ -45,11 +45,13 @@ export class TagController {
     }
   }
 
+  @Public()
   @Post('predict-from-health')
   async predictTagsFromHealth(@Body() body: PredictTagsFromHealthDto) {
     return this.tagService.predictTagsFromHealthInfo(body.healthInfo, body.illness);
   }
 
+  @Public()
   @Get('predict-for-user/:userId')
   async predictTagsForUser(@Param('userId') userId: string) {
     const userHealthInfo = await this.userHealthService.getUserHealthInfo(parseInt(userId, 10));
