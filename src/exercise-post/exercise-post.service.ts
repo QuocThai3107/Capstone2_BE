@@ -339,7 +339,10 @@ export class ExercisePostService {
   async searchByTagsAdvanced(includeTags: string[], excludeTags: string[]) {
     try {
       // Tạo điều kiện tìm kiếm
-      const whereCondition: any = {};
+      const whereCondition: any = {
+        // Thêm điều kiện lọc chỉ lấy các bài tập có status_id = 2
+        status_id: 2
+      };
       
       // Nếu có includeTags, sử dụng nguyên lý OR (bài tập có ít nhất một trong các tags này)
       if (includeTags && includeTags.length > 0) {
@@ -395,6 +398,7 @@ export class ExercisePostService {
           description: exercise.description,
           img_url: exercise.img_url,
           video_rul: exercise.video_rul,
+          status_id: exercise.status_id, // Thêm trường status_id vào kết quả trả về
           steps: exercise.step,
           tags: exercise.exerciseposttag.map(tag => ({
             tag_id: tag.tag.tag_id,

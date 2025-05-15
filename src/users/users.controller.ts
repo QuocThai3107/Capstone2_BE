@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, InternalServerErrorException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UseGuards, InternalServerErrorException, Query, Put } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -38,11 +38,13 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Public()
   @Get('gym')
   getGymUsers() {
     return this.usersService.getGymUsers();
   }
 
+  @Public()
   @Get('pt')
   getAllPTs() {
     return this.usersService.getAllPTs();
@@ -52,6 +54,18 @@ export class UsersController {
   @Get('gym/pts')
   getPTsByGym() {
     return this.usersService.getPTsByGym();
+  }
+
+  @Public()
+  @Get('gym/pts/filter')
+  getPTsByGymFiltered(
+    @Query('role_id') roleId: string,
+    @Query('status_id') statusId: string
+  ) {
+    return this.usersService.getPTsByGymFiltered(
+      roleId ? +roleId : undefined,
+      statusId ? +statusId : undefined
+    );
   }
 
   @Public()
@@ -80,6 +94,19 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('status')
+  checkUserStatus(@GetUser('user_id') userId: number) {
+    try {
+      return this.usersService.checkUserStatus(userId);
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('pt/profile')
   getMyPTProfile(@GetUser('user_id') userId: number) {
     return this.usersService.getPTProfile(userId);
@@ -91,6 +118,7 @@ export class UsersController {
     return this.usersService.getPublicProfile(+id);
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
@@ -113,6 +141,32 @@ export class UsersController {
     @Body() updateUserAdminDto: UpdateUserAdminDto,
   ) {
     return this.usersService.updateAdmin(+id, updateUserAdminDto);
+  }
+
+  @Public()
+  @Put('pts/approve/:id')
+  approvePT(@Param('id') id: string) {
+    try {
+      return this.usersService.approvePT(+id);
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
+  }
+
+  @Public()
+  @Delete('pts/reject/:id')
+  rejectPT(@Param('id') id: string) {
+    try {
+      return this.usersService.rejectPT(+id);
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message
+      };
+    }
   }
 
   @Delete(':id')

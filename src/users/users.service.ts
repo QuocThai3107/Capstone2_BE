@@ -623,10 +623,135 @@ export class UsersService {
     }
   }
 
+  async getPTsByGymFiltered(roleId?: number, statusId?: number) {
+    try {
+      // Lấy danh sách tên gym từ các Gym Owner (role_id = 4)
+      const gymOwners = await this.prisma.user.findMany({
+        where: {
+          role_id: 4
+        },
+        select: {
+          name: true
+        }
+      });
+
+      const gymNames = gymOwners.map(owner => owner.name);
+
+      // Tạo điều kiện lọc
+      const whereCondition: any = {
+        gym: {
+          in: gymNames
+        }
+      };
+      
+      // Thêm điều kiện lọc role_id nếu có
+      if (roleId !== undefined) {
+        whereCondition.role_id = roleId;
+      } else {
+        whereCondition.role_id = 3; // Mặc định là PT
+      }
+      
+      // Thêm điều kiện lọc status_id nếu có
+      if (statusId !== undefined) {
+        whereCondition.Status_id = statusId;
+      }
+
+      // Lấy danh sách PT theo điều kiện lọc
+      const pts = await this.prisma.user.findMany({
+        where: whereCondition,
+        select: {
+          user_id: true,
+          username: true,
+          name: true,
+          email: true,
+          phoneNum: true,
+          gym: true,
+          Status_id: true,
+          certificate: true,
+          imgUrl: true,
+          introduction: true
+        }
+      });
+
+      return {
+        status: 'success',
+        count: pts.length,
+        data: pts.map(pt => ({
+          id: pt.user_id,
+          username: pt.username,
+          name: pt.name,
+          email: pt.email,
+          phoneNum: pt.phoneNum,
+          gym: pt.gym,
+          Status_id: pt.Status_id,
+          certificate: pt.certificate || [],
+          imgUrl: pt.imgUrl,
+          introduction: pt.introduction
+        }))
+      };
+    } catch (error) {
+      console.error('Error getting filtered PTs by gym:', error);
+      throw new InternalServerErrorException('Lỗi khi lấy danh sách PT theo bộ lọc');
+    }
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto) {
     return this.prisma.user.update({
       where: { user_id: id },
       data: updateUserDto
     });
+  }
+
+  async checkUserStatus(userId: number) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { user_id: userId },
+        select: {
+          user_id: true,
+          username: true,
+          Status_id: true,
+          role_id: true
+        }
+      });
+
+      if (!user) {
+        throw new NotFoundException('Không tìm thấy người dùng');
+      }
+
+      // Lấy thông tin về trạng thái
+      let statusName = 'Unknown';
+      switch(user.Status_id) {
+        case 1:
+          statusName = 'Pending';
+          break;
+        case 2:
+          statusName = 'Active';
+          break;
+        case 3:
+          statusName = 'Inactive';
+          break;
+        case 4:
+          statusName = 'Banned';
+          break;
+        default:
+          statusName = 'Unknown';
+      }
+
+      return {
+        status: 'success',
+        data: {
+          user_id: user.user_id,
+          username: user.username,
+          status_id: user.Status_id,
+          status_name: statusName,
+          role_id: user.role_id
+        }
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Lỗi khi kiểm tra trạng thái người dùng');
+    }
   }
 } 

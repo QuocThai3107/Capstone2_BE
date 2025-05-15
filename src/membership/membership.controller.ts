@@ -3,25 +3,22 @@ import { MembershipService } from './membership.service';
 import { CreateMembershipDto } from './dto/create-membership.dto';
 import { UpdateMembershipDto } from './dto/update-membership.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { GetUser } from '../auth/decorator';
+import { GetUser, Public } from '../auth/decorator';
 
 @Controller('membership')
 export class MembershipController {
   constructor(private readonly membershipService: MembershipService) {}
 
+  @Public()
   @Get('gym/:userId')
   findGymMemberships(@Param('userId') userId: string) {
     console.log('Accessing gym memberships for userId:', userId);
     return this.membershipService.findByUserId(+userId);
   }
 
+  @Public()
   @Post()
-  @UseGuards(JwtAuthGuard)
-  create(
-    @GetUser('user_id') userId: number,
-    @Body() createMembershipDto: CreateMembershipDto
-  ) {
-    createMembershipDto.user_id = userId;
+  create(@Body() createMembershipDto: CreateMembershipDto) {
     return this.membershipService.create(createMembershipDto);
   }
 
@@ -37,11 +34,13 @@ export class MembershipController {
     return this.membershipService.findByUserId(userId);
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.membershipService.findOne(+id);
   }
 
+  @Public()
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -50,6 +49,7 @@ export class MembershipController {
     return this.membershipService.update(+id, updateMembershipDto);
   }
 
+  @Public()
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.membershipService.remove(+id);

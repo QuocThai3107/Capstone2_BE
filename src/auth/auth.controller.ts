@@ -32,7 +32,7 @@ export class AuthController {
   async login(@Body() loginDto: { username: string; password: string }) {
     return this.authService.login(loginDto);
   }
-
+  @Public()
   @Get('profile')
   async getProfile(@Request() req) {
     // Nếu không có user trong request, trả về thông báo

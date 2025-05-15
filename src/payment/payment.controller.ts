@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Logger, 
 import { PaymentService } from './payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorator/public.decorator';
 
 @Controller('payment')
 export class PaymentController {
@@ -119,6 +120,94 @@ export class PaymentController {
       throw new HttpException(
         {
           message: 'Không thể lấy lịch sử thanh toán',
+          error: error.message
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+  
+  @Public()
+  @Get('gym/:gymId')
+  async getPaymentsByGym(@Param('gymId') gymId: string) {
+    try {
+      this.logger.log(`Fetching payments for gym owner with ID: ${gymId}`);
+      
+      // Lấy danh sách membership của gym owner
+      const memberships = await this.prisma.membership.findMany({
+        where: {
+          user_id: parseInt(gymId)
+        },
+        select: {
+          membership_id: true
+        }
+      });
+      
+      if (memberships.length === 0) {
+        this.logger.log(`No memberships found for gym owner with ID: ${gymId}`);
+        return {
+          status: 'success',
+          count: 0,
+          data: []
+        };
+      }
+      
+      const membershipIds = memberships.map(m => m.membership_id);
+      this.logger.log(`Found ${membershipIds.length} memberships for gym owner: ${membershipIds.join(', ')}`);
+      
+      // Lấy danh sách payment dựa trên membership_id
+      const payments = await this.prisma.payment.findMany({
+        where: {
+          membership_id: {
+            in: membershipIds
+          }
+        },
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              username: true,
+              name: true,
+              email: true,
+              phoneNum: true,
+              imgUrl: true
+            }
+          },
+          membership: {
+            select: {
+              membership_id: true,
+              membership_name: true,
+              price: true,
+              duration: true
+            }
+          }
+        },
+        orderBy: {
+          payment_date: 'desc'
+        }
+      });
+      
+      return {
+        status: 'success',
+        count: payments.length,
+        data: payments.map(payment => ({
+          payment_id: payment.payment_id,
+          user: payment.user,
+          membership: payment.membership,
+          amount_paid: payment.amount_paid,
+          payment_date: payment.payment_date,
+          status_id: payment.status_id,
+          status: this.getStatusText(payment.status_id),
+          status_description: this.getStatusDescription(payment.status_id),
+          payment_method: payment.payment_method,
+          order_id: payment.order_id
+        }))
+      };
+    } catch (error) {
+      this.logger.error('Error fetching gym payments:', error);
+      throw new HttpException(
+        {
+          message: 'Không thể lấy danh sách thanh toán cho gym',
           error: error.message
         },
         HttpStatus.INTERNAL_SERVER_ERROR
